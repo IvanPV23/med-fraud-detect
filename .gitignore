@@ -1,0 +1,29 @@
+# Python
+backend/venv/
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+
+# Jupyter
+*.ipynb_checkpoints
+
+# VSCode
+.vscode/
+
+# Node/React
+frontend/node_modules/
+frontend/dist/
+frontend/.next/
+frontend/.env
+frontend/.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# General
+.env
+*.log
+*.sqlite3
+*.db 

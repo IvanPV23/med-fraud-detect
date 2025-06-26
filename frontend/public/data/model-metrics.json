@@ -1,0 +1,49 @@
+{
+  "model_info": {
+    "name": "Healthcare Fraud Detection Model",
+    "type": "XGBoost Classifier",
+    "version": "2.1.0",
+    "training_date": "2025-06-15",
+    "samples_trained": 145000,
+    "features": 10
+  },
+  "performance_metrics": {
+    "accuracy": 0.94,
+    "precision": 0.92,
+    "recall": 0.89,
+    "f1_score": 0.905,
+    "roc_auc": 0.96,
+    "calibration_score": 0.88,
+    "specificity": 0.95,
+    "negative_predictive_value": 0.93
+  },
+  "confusion_matrix": {
+    "true_positive": 890,
+    "false_positive": 78,
+    "true_negative": 9520,
+    "false_negative": 112
+  },
+  "feature_importance": [
+    {"feature": "TotalAmountReimbursed", "importance": 0.23},
+    {"feature": "NumUniqueBeneficiaries", "importance": 0.19},
+    {"feature": "TotalClaims", "importance": 0.15},
+    {"feature": "MeanAmountReimbursed", "importance": 0.12},
+    {"feature": "NumUniqueDiagnosisCodes", "importance": 0.10},
+    {"feature": "AvgClaimDurationDays", "importance": 0.08},
+    {"feature": "NumUniqueProcedureCodes", "importance": 0.07},
+    {"feature": "NumOutpatientClaims", "importance": 0.04},
+    {"feature": "NumInpatientClaims", "importance": 0.02}
+  ],
+  "roc_curve_data": [
+    {"fpr": 0.0, "tpr": 0.0},
+    {"fpr": 0.05, "tpr": 0.32},
+    {"fpr": 0.1, "tpr": 0.58},
+    {"fpr": 0.15, "tpr": 0.75},
+    {"fpr": 0.2, "tpr": 0.84},
+    {"fpr": 0.25, "tpr": 0.89},
+    {"fpr": 0.3, "tpr": 0.92},
+    {"fpr": 0.4, "tpr": 0.95},
+    {"fpr": 0.5, "tpr": 0.97},
+    {"fpr": 1.0, "tpr": 1.0}
+  ]
+}

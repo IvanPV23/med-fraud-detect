@@ -1,0 +1,11 @@
+Provider,TotalClaims,NumInpatientClaims,NumOutpatientClaims,TotalAmountReimbursed,MeanAmountReimbursed,AvgClaimDurationDays,NumUniqueDiagnosisCodes,NumUniqueProcedureCodes,NumUniqueBeneficiaries,IsolationForestScore
+HealthCare Partners LLC,1250,145,1105,3450000,2760,15.5,89,156,892,-0.15
+Metro Medical Group,890,67,823,1890000,2124,12.3,67,134,567,0.23
+Riverside Clinic,2340,234,2106,5670000,2423,18.7,123,198,1456,0.45
+Sunset Healthcare,567,45,522,890000,1570,8.9,45,89,345,-0.32
+Advanced Medical Solutions,3450,456,2994,8900000,2579,22.1,167,289,2134,0.67
+Family Care Associates,1890,123,1767,2340000,1238,14.2,78,145,789,-0.08
+Premier Health Services,789,89,700,1560000,1977,16.8,56,112,445,0.12
+Central Valley Medical,2100,178,1922,4560000,2171,19.3,101,187,1234,0.34
+Oakwood Healthcare,1456,134,1322,2890000,1985,11.7,89,167,678,-0.21
+Golden State Medical,4560,567,3993,12340000,2706,25.4,198,334,2789,0.78
