@@ -11,8 +11,8 @@ proyecto-ia/
 │   │   ├── ingestor.py     # Procesamiento de datos CSV
 │   │   └── predictor.py    # Predicciones con modelo XGBoost
 │   ├── data/               # Datos y archivos procesados
-│   │   ├── uploads/        # Archivos CSV subidos
-│   │   └── processed/      # Datos procesados (test_final.csv)
+│   │   ├── test_uploaded/  # Archivos CSV subidos
+│   │   └── test_final/     # test_final.csv generado
 │   ├── models/             # Modelo entrenado
 │   │   └── xgb_fraud_model.pkl
 │   ├── metrics/            # Métricas del modelo
@@ -88,22 +88,25 @@ El servidor estará disponible en `http://localhost:8000`
 
 La aplicación estará disponible en `http://localhost:5173`
 
+> **Nota:** El frontend está configurado para redirigir automáticamente las rutas `/api` al backend durante el desarrollo (ver `vite.config.ts`).
+
 ## 📊 Características del Sistema
 
-### Backend API
+### Backend API (Principales endpoints)
 
-- **POST /upload** - Subir archivos CSV
-- **POST /ingest** - Procesar datos y generar features
-- **POST /predict** - Realizar predicciones de fraude
-- **GET /metricas** - Obtener métricas del modelo
-- **GET /health** - Verificar estado del sistema
+- **POST `/upload`** — Subir archivos CSV de test
+- **POST `/ingest`** — Procesar y consolidar los archivos subidos, generar `test_final.csv`
+- **POST `/predict`** — Realizar predicciones de fraude sobre los datos procesados
+- **GET `/metricas`** — Obtener métricas del modelo ML
+- **GET `/health`** — Verificar estado del sistema y modelo
+- **GET `/api/test-final-preview`** — Obtener las primeras 10 filas de `test_final.csv` para previsualización en el frontend
 
 ### Frontend
 
-- **Página de Inicio** - Descripción del sistema
-- **Bulk Input** - Subida masiva de archivos CSV
-- **Model Overview** - Métricas y rendimiento del modelo
-- **Single Prediction** - Predicciones individuales
+- **Página de Inicio** — Descripción del sistema
+- **Bulk Input** — Subida masiva de archivos CSV, procesamiento, preview y predicción
+- **Model Overview** — Métricas y rendimiento del modelo
+- **Single Prediction** — Predicciones individuales
 
 ### Modelo ML
 
@@ -149,17 +152,22 @@ python test_api.py
 ### 1. Subir Datos
 
 1. Navegar a "Bulk Input" en el frontend
-2. Arrastrar y soltar archivo CSV o hacer clic en "Choose File"
-3. Verificar que el archivo tenga las columnas requeridas
-4. El archivo se subirá automáticamente al backend
+2. Arrastrar y soltar archivos CSV o hacer clic en "Choose File"
+3. Verificar que los archivos tengan los nombres y columnas requeridas
+4. Los archivos se subirán automáticamente al backend
 
 ### 2. Procesar Datos
 
-1. Hacer clic en "Run Batch Prediction"
+1. Hacer clic en **Process Data**
 2. El sistema procesará los datos y generará las features
-3. Se ejecutarán las predicciones automáticamente
+3. (Opcional) Hacer clic en **Toggle Preview** para ver las primeras filas del dataset consolidado
 
-### 3. Ver Resultados
+### 3. Predecir
+
+1. Hacer clic en **Predict**
+2. El sistema ejecutará las predicciones sobre los datos procesados
+
+### 4. Ver Resultados
 
 1. Los resultados se mostrarán en una tabla
 2. Cada provider tendrá:
@@ -167,48 +175,11 @@ python test_api.py
    - Probabilidad de fraude
 3. Descargar resultados en CSV
 
-### 4. Ver Métricas del Modelo
+### 5. Ver Métricas del Modelo
 
 1. Navegar a "Model Overview"
 2. Ver métricas de rendimiento
 3. Analizar importancia de features
-
-## 🛠️ Desarrollo
-
-### Estructura de Agentes
-
-#### DataIngestor (`agents/ingestor.py`)
-- Procesa archivos CSV brutos
-- Genera features requeridas por el modelo
-- Valida formato de datos
-- Crea `test_final.csv`
-
-#### FraudPredictor (`agents/predictor.py`)
-- Carga modelo XGBoost
-- Realiza predicciones
-- Retorna probabilidades
-- Maneja errores de modelo
-
-### Endpoints API
-
-```python
-# Subir archivo
-POST /upload
-Content-Type: multipart/form-data
-file: CSV file
-
-# Procesar datos
-POST /ingest
-Response: {"success": true, "message": "..."}
-
-# Predicciones
-POST /predict
-Response: {"predictions": [{"Provider": "...", "Prediccion": 0, "Probabilidad_Fraude": 0.123}]}
-
-# Métricas
-GET /metricas
-Response: {"metrics": {...}, "model_info": {...}}
-```
 
 ## 📈 Métricas del Modelo
 
@@ -230,18 +201,13 @@ Response: {"metrics": {...}, "model_info": {...}}
    - Verificar que las dependencias estén instaladas
 
 3. **Error de Datos**
-   - Verificar formato CSV
+   - Verificar formato y nombres de archivos CSV
    - Verificar columnas requeridas
    - Verificar tipos de datos
 
 ### Logs
 
-Los logs se muestran en la consola del backend:
-```
-INFO:__main__:Archivo subido: sample-providers.csv
-INFO:agents.ingestor:Procesando archivo: data/uploads/sample-providers.csv
-INFO:agents.predictor:Predicciones completadas para 20 providers
-```
+Los logs se muestran en la consola del backend.
 
 ## 📝 Notas Técnicas
 
