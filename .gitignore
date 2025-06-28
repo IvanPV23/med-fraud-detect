@@ -1,15 +1,99 @@
 # Python
-backend/venv/
-*.pyc
 __pycache__/
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+# Data files
+backend/data/test_uploaded/
+backend/data/test_final/
+backend/data/test_dashboard/
+backend/data/uploads/
+
+# Metrics and model files
+backend/metrics/
+backend/models/
+
+# Test files
+backend/test*.py
+backend/test_*.py
+
+# Documentation files that shouldn't be in repo
+backend/CHANGES_SUMMARY.md
+
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Node modules (frontend)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Build outputs
+frontend/dist/
+frontend/build/
+
+# Coverage reports
+coverage/
+*.lcov
+
+# Temporary files
+*.tmp
+*.temp
 
 # Jupyter
 *.ipynb_checkpoints
 
 # VSCode
-.vscode/
 test_shap_values.py
 test_lime_direct.py
 test_api.py
@@ -17,18 +101,10 @@ test_ingest.py
 test_lime_endpoint.py
 
 # Node/React
-frontend/node_modules/
 frontend/dist/
-frontend/.next/
 frontend/.env
 frontend/.env.local
 
-# OS
-.DS_Store
-Thumbs.db
-
 # General
-.env
-*.log
 *.sqlite3
 *.db 
