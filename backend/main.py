@@ -626,7 +626,7 @@ def _build_gemini_prompt(context: Dict, user_message: str) -> str:
 def _call_gemini_api(prompt: str) -> str:
     """Llama a la API de Gemini (implementación básica)"""
     # NOTA: Esta es una implementación básica. En producción, usarías la librería oficial de Google
-    api_key = "tu_api_key"
+    api_key = "API_KEY"
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
     
     headers = {

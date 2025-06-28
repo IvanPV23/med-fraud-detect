@@ -44,17 +44,6 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# Project specific
-# Data files
-backend/data/test_uploaded/
-backend/data/test_final/
-backend/data/test_dashboard/
-backend/data/uploads/
-
-# Metrics and model files
-backend/metrics/
-backend/models/
-
 # Test files
 backend/test*.py
 backend/test_*.py
