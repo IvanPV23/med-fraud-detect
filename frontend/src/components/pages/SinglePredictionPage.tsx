@@ -1,33 +1,26 @@
 import { useState } from 'react';
-import { User, Calculator, AlertTriangle, CheckCircle, X } from 'lucide-react';
-import { apiService } from '../../services/api';
+import { User, Calculator, AlertTriangle, CheckCircle, X, Play, RefreshCw, MessageCircle } from 'lucide-react';
+import { apiService, SinglePredictionRequest, PredictionResult } from '../../services/api';
 
 interface PredictionForm {
   Provider: string;
   Total_Reimbursed: number;
-  Mean_Reimbursed: number;
   Claim_Count: number;
   Unique_Beneficiaries: number;
   Pct_Male: number;
-}
-
-interface PredictionResult {
-  Provider: string;
-  Prediccion: number;
-  Probabilidad_Fraude: number;
 }
 
 export function SinglePredictionPage() {
   const [formData, setFormData] = useState<PredictionForm>({
     Provider: '',
     Total_Reimbursed: 0,
-    Mean_Reimbursed: 0,
     Claim_Count: 0,
     Unique_Beneficiaries: 0,
-    Pct_Male: 0
+    Pct_Male: 0.5
   });
   
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
+  const [calculatedMeanReimbursed, setCalculatedMeanReimbursed] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -45,6 +38,7 @@ export function SinglePredictionPage() {
     setError(null);
     setSuccessMessage(null);
     setPrediction(null);
+    setCalculatedMeanReimbursed(null);
 
     try {
       // Validar datos
@@ -52,39 +46,40 @@ export function SinglePredictionPage() {
         throw new Error('Provider name is required');
       }
 
+      if (formData.Claim_Count <= 0) {
+        throw new Error('Claim Count must be greater than 0');
+      }
+
       if (formData.Pct_Male < 0 || formData.Pct_Male > 1) {
         throw new Error('Pct_Male must be between 0 and 1');
       }
 
-      // Crear archivo CSV temporal con los datos
-      const csvContent = [
-        'Provider,Total_Reimbursed,Mean_Reimbursed,Claim_Count,Unique_Beneficiaries,Pct_Male',
-        `${formData.Provider},${formData.Total_Reimbursed},${formData.Mean_Reimbursed},${formData.Claim_Count},${formData.Unique_Beneficiaries},${formData.Pct_Male}`
-      ].join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const file = new File([blob], 'single_prediction.csv', { type: 'text/csv' });
-
-      // Subir archivo
-      const uploadResponse = await apiService.uploadFile(file);
-      if (!uploadResponse.success) {
-        throw new Error(uploadResponse.message);
+      if (formData.Total_Reimbursed < 0) {
+        throw new Error('Total Reimbursed must be non-negative');
       }
 
-      // Procesar datos
-      const ingestResponse = await apiService.ingestData();
-      if (!ingestResponse.success) {
-        throw new Error(ingestResponse.message);
+      if (formData.Unique_Beneficiaries <= 0) {
+        throw new Error('Unique Beneficiaries must be greater than 0');
       }
 
-      // Obtener predicción
-      const predictResponse = await apiService.predictFraud();
-      if (!predictResponse.success || predictResponse.predictions.length === 0) {
+      // Preparar datos para la API
+      const requestData: SinglePredictionRequest = {
+        Provider: formData.Provider,
+        Total_Reimbursed: formData.Total_Reimbursed,
+        Claim_Count: formData.Claim_Count,
+        Unique_Beneficiaries: formData.Unique_Beneficiaries,
+        Pct_Male: formData.Pct_Male
+      };
+
+      // Llamar a la API de predicción individual
+      const response = await apiService.predictSingle(requestData);
+      
+      if (!response.success) {
         throw new Error('Prediction failed');
       }
 
-      const result = predictResponse.predictions[0];
-      setPrediction(result);
+      setPrediction(response.prediction);
+      setCalculatedMeanReimbursed(response.calculated_mean_reimbursed);
       setSuccessMessage('Prediction completed successfully!');
 
     } catch (err) {
@@ -98,12 +93,12 @@ export function SinglePredictionPage() {
     setFormData({
       Provider: '',
       Total_Reimbursed: 0,
-      Mean_Reimbursed: 0,
       Claim_Count: 0,
       Unique_Beneficiaries: 0,
-      Pct_Male: 0
+      Pct_Male: 0.5
     });
     setPrediction(null);
+    setCalculatedMeanReimbursed(null);
     setError(null);
     setSuccessMessage(null);
   };
@@ -130,12 +125,12 @@ export function SinglePredictionPage() {
           <div>
             <h4 className="font-medium text-purple-800 mb-2">Required Features:</h4>
             <ul className="text-sm text-purple-700 space-y-1">
-              <li>• <strong>Provider:</strong> Provider name (not used in prediction)</li>
+              <li>• <strong>Provider:</strong> Provider name (identifier)</li>
               <li>• <strong>Total_Reimbursed:</strong> Total amount reimbursed</li>
-              <li>• <strong>Mean_Reimbursed:</strong> Average reimbursement per claim</li>
               <li>• <strong>Claim_Count:</strong> Total number of claims</li>
               <li>• <strong>Unique_Beneficiaries:</strong> Number of unique patients</li>
               <li>• <strong>Pct_Male:</strong> Percentage of male patients (0-1)</li>
+              <li>• <strong>Mean_Reimbursed:</strong> <em>Calculated automatically</em></li>
             </ul>
           </div>
           <div>
@@ -200,94 +195,83 @@ export function SinglePredictionPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Total Reimbursed ($)
+                Total Amount Reimbursed ($) *
               </label>
               <input
                 type="number"
+                step="0.01"
+                min="0"
                 value={formData.Total_Reimbursed}
                 onChange={(e) => handleInputChange('Total_Reimbursed', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="0"
-                min="0"
-                step="0.01"
+                placeholder="0.00"
+                required
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Mean Reimbursed ($)
+                Claim Count *
               </label>
               <input
                 type="number"
-                value={formData.Mean_Reimbursed}
-                onChange={(e) => handleInputChange('Mean_Reimbursed', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="0"
-                min="0"
-                step="0.01"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Claim Count
-              </label>
-              <input
-                type="number"
+                min="1"
                 value={formData.Claim_Count}
                 onChange={(e) => handleInputChange('Claim_Count', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 placeholder="0"
-                min="0"
+                required
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Unique Beneficiaries
+                Unique Beneficiaries *
               </label>
               <input
                 type="number"
+                min="1"
                 value={formData.Unique_Beneficiaries}
                 onChange={(e) => handleInputChange('Unique_Beneficiaries', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 placeholder="0"
-                min="0"
+                required
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Percentage Male (0-1)
+                Percentage Male (0-1) *
               </label>
               <input
                 type="number"
+                step="0.01"
+                min="0"
+                max="1"
                 value={formData.Pct_Male}
                 onChange={(e) => handleInputChange('Pct_Male', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 placeholder="0.5"
-                min="0"
-                max="1"
-                step="0.01"
+                required
               />
-              <p className="text-xs text-gray-500 mt-1">Enter value between 0 and 1 (e.g., 0.5 for 50%)</p>
+              <p className="text-xs text-gray-500 mt-1">Enter a value between 0 and 1 (e.g., 0.5 for 50%)</p>
             </div>
 
             <div className="flex space-x-3 pt-4">
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center space-x-2"
+                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
                     <span>Processing...</span>
                   </>
                 ) : (
                   <>
-                    <Calculator className="w-4 h-4" />
-                    <span>Predict Fraud</span>
+                    <Play className="w-4 h-4" />
+                    <span>Run Prediction</span>
                   </>
                 )}
               </button>
@@ -295,7 +279,7 @@ export function SinglePredictionPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors duration-200"
+                className="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
               >
                 Reset
               </button>
@@ -303,69 +287,162 @@ export function SinglePredictionPage() {
           </form>
         </div>
 
-        {/* Prediction Results */}
+        {/* Results Panel */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h3 className="text-xl font-semibold text-gray-900 mb-6">Prediction Results</h3>
           
-          {prediction ? (
+          {!prediction ? (
+            <div className="text-center py-12">
+              <Calculator className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">Enter provider data and run prediction to see results</p>
+            </div>
+          ) : (
             <div className="space-y-6">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">Provider: {prediction.Provider}</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Fraud Detection:</span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      prediction.Prediccion === 1 
-                        ? 'bg-red-100 text-red-800' 
-                        : 'bg-green-100 text-green-800'
-                    }`}>
-                      {prediction.Prediccion === 1 ? 'FRAUD DETECTED' : 'NO FRAUD'}
-                    </span>
+              {/* Calculated Mean Reimbursed */}
+              {calculatedMeanReimbursed !== null && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">Calculated Values</h4>
+                  <p className="text-blue-700">
+                    <strong>Mean Reimbursed:</strong> ${calculatedMeanReimbursed.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Calculated as Total Reimbursed ÷ Claim Count
+                  </p>
+                </div>
+              )}
+
+              {/* Prediction Result */}
+              <div className={`border rounded-lg p-4 ${
+                prediction.Prediccion === 1 
+                  ? 'bg-red-50 border-red-200' 
+                  : 'bg-green-50 border-green-200'
+              }`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-gray-900">Fraud Detection Result</h4>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    prediction.Prediccion === 1
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-green-100 text-green-800'
+                  }`}>
+                    {prediction.Prediccion === 1 ? 'FRAUD DETECTED' : 'NO FRAUD'}
+                  </span>
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">
+                    <strong>Provider:</strong> {prediction.Provider}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Fraud Probability:</strong> {(prediction.Probabilidad_Fraude * 100).toFixed(2)}%
+                  </p>
+                </div>
+
+                {/* Probability Bar */}
+                <div className="mt-4">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>0%</span>
+                    <span>50%</span>
+                    <span>100%</span>
                   </div>
-                  
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-gray-600">Fraud Probability:</span>
-                      <span className="font-medium text-gray-900">
-                        {(prediction.Probabilidad_Fraude * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
-                        className={`h-3 rounded-full transition-all duration-300 ${
-                          prediction.Probabilidad_Fraude > 0.7 ? 'bg-red-500' : 
-                          prediction.Probabilidad_Fraude > 0.4 ? 'bg-yellow-500' : 'bg-green-500'
-                        }`}
-                        style={{ width: `${prediction.Probabilidad_Fraude * 100}%` }}
-                      ></div>
-                    </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        prediction.Probabilidad_Fraude > 0.5 ? 'bg-red-500' : 'bg-green-500'
+                      }`}
+                      style={{ width: `${prediction.Probabilidad_Fraude * 100}%` }}
+                    ></div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-medium text-blue-900 mb-2">Risk Assessment</h4>
-                <div className="text-sm text-blue-700 space-y-1">
-                  {prediction.Probabilidad_Fraude > 0.7 && (
-                    <p>⚠️ <strong>High Risk:</strong> Strong indicators of potential fraud detected.</p>
+              {/* Risk Assessment */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-2">Risk Assessment</h4>
+                <p className="text-sm text-gray-600">
+                  {prediction.Probabilidad_Fraude > 0.7 ? (
+                    <span className="text-red-600 font-medium">High Risk - Immediate investigation recommended</span>
+                  ) : prediction.Probabilidad_Fraude > 0.5 ? (
+                    <span className="text-orange-600 font-medium">Medium Risk - Further monitoring advised</span>
+                  ) : (
+                    <span className="text-green-600 font-medium">Low Risk - No immediate action required</span>
                   )}
-                  {prediction.Probabilidad_Fraude > 0.4 && prediction.Probabilidad_Fraude <= 0.7 && (
-                    <p>⚠️ <strong>Medium Risk:</strong> Some suspicious patterns detected.</p>
-                  )}
-                  {prediction.Probabilidad_Fraude <= 0.4 && (
-                    <p>✅ <strong>Low Risk:</strong> No significant fraud indicators detected.</p>
-                  )}
-                </div>
+                </p>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <Calculator className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Enter provider data and click "Predict Fraud" to see results</p>
             </div>
           )}
         </div>
       </div>
+
+      {/* AI Assistant Section - Only show when there's a prediction result */}
+      {prediction && (
+        <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+              <MessageCircle className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900">AI Fraud Analysis Assistant</h3>
+              <p className="text-sm text-gray-600">Powered by Gemini AI - Get intelligent insights about your results</p>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Assistant Info */}
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
+              <h4 className="text-lg font-semibold text-purple-900 mb-4">How can I help you?</h4>
+              
+              <div className="space-y-4">
+                <p className="text-gray-700">
+                  I can analyze your fraud detection results and provide detailed explanations about why the model made its prediction.
+                </p>
+                
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 mb-2">Suggested questions:</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• "Why did the model flag this provider as potential fraud?"</li>
+                    <li>• "What patterns in the data suggest suspicious activity?"</li>
+                    <li>• "How does this provider compare to others in the dataset?"</li>
+                    <li>• "What specific metrics contributed to the fraud score?"</li>
+                    <li>• "What actions should be taken based on this result?"</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Chat Interface */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
+                  <MessageCircle className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">AI Assistant</p>
+                  <p className="text-xs text-gray-500">Coming soon...</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <p className="text-gray-600 text-sm">
+                  The AI assistant integration is currently under development. This feature will provide intelligent analysis and explanations of fraud detection results using Gemini AI.
+                </p>
+                
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 mb-2">Current prediction context:</p>
+                  <ul className="text-xs text-gray-700 space-y-1">
+                    <li>• Provider: {prediction.Provider}</li>
+                    <li>• Fraud Probability: {(prediction.Probabilidad_Fraude * 100).toFixed(2)}%</li>
+                    <li>• Result: {prediction.Prediccion === 1 ? 'FRAUD DETECTED' : 'NO FRAUD'}</li>
+                    <li>• Risk Level: {
+                      prediction.Probabilidad_Fraude > 0.7 ? 'High Risk' :
+                      prediction.Probabilidad_Fraude > 0.5 ? 'Medium Risk' : 'Low Risk'
+                    }</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

@@ -63,7 +63,7 @@ export function ModelOverviewPage() {
               type: response.model_info.model_type,
               version: "1.0.0",
               training_date: new Date().toISOString().split('T')[0], // Fecha actual como placeholder
-              samples_trained: 1353, // Valor basado en confusion matrix
+              samples_trained: 4328, // Valor basado en confusion matrix
               features: response.model_info.n_features
             },
             performance_metrics: {

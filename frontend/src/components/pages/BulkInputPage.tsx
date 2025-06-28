@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
-import { Upload, FileText, Play, Download, AlertCircle, CheckCircle, X, Eye, Users, Building2, Activity, Database } from 'lucide-react';
+import { Upload, FileText, Play, Download, AlertCircle, CheckCircle, X, Eye, Users, Building2, Activity, Database, Search, BarChart3 } from 'lucide-react';
 import { apiService, PredictionResult as ApiPredictionResult } from '../../services/api';
+import { ProviderDetailsModal } from '../ProviderDetailsModal';
+import { InteractiveDashboard } from '../InteractiveDashboard';
 
 interface FileUpload {
   file: File;
@@ -44,6 +46,11 @@ export function BulkInputPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [testFinalReady, setTestFinalReady] = useState(false);
   const [dataProcessed, setDataProcessed] = useState(false);
+  
+  // Nuevos estados para modal y dashboard
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showInteractiveDashboard, setShowInteractiveDashboard] = useState(false);
 
   const fileTypes = [
     { type: 'beneficiary', label: 'Beneficiary Data', icon: Users, description: 'Patient beneficiary information' },
@@ -202,21 +209,32 @@ export function BulkInputPage() {
 
   const downloadResults = () => {
     const csvContent = [
-      'Provider,Prediccion,Probabilidad_Fraude',
-      ...predictions.map(p => 
-        `"${p.Provider}",${p.Prediccion},${p.Probabilidad_Fraude}`
-      )
+      'Provider,Fraud_Prediction,Fraud_Probability',
+      ...predictions.map(p => `${p.Provider},${p.Prediccion === 1 ? 'Fraud' : 'No_Fraud'},${(p.Probabilidad_Fraude * 100).toFixed(2)}%`)
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'fraud_detection_results.csv';
-    document.body.appendChild(a);
+    a.download = 'fraud_predictions.csv';
     a.click();
-    document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
+  };
+
+  const handleProviderDetails = (providerName: string) => {
+    setSelectedProvider(providerName);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedProvider(null);
+  };
+
+  const getSelectedProviderPrediction = () => {
+    if (!selectedProvider) return null;
+    return predictions.find(p => p.Provider === selectedProvider) || null;
   };
 
   // Filtrar predicciones por Provider
@@ -496,13 +514,22 @@ export function BulkInputPage() {
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               />
             </div>
-            <button
-              onClick={downloadResults}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
-            >
-              <Download className="w-4 h-4" />
-              <span>Download Results</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowInteractiveDashboard(!showInteractiveDashboard)}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-colors duration-200 flex items-center space-x-2"
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>Interactive Dashboard</span>
+              </button>
+              <button
+                onClick={downloadResults}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Results</span>
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -512,6 +539,7 @@ export function BulkInputPage() {
                   <th className="text-left py-3 px-4 font-semibold text-gray-900">Provider</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-900">Fraud Prediction</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-900">Fraud Probability</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -543,6 +571,15 @@ export function BulkInputPage() {
                         </span>
                       </div>
                     </td>
+                    <td className="py-3 px-4">
+                      <button
+                        onClick={() => handleProviderDetails(prediction.Provider)}
+                        className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                        title="View Provider Details"
+                      >
+                        <Search className="w-4 h-4" />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -564,6 +601,26 @@ export function BulkInputPage() {
             >Siguiente</button>
           </div>
         </div>
+      )}
+
+      {/* Interactive Dashboard */}
+      {showInteractiveDashboard && (
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <InteractiveDashboard 
+            predictions={predictions} 
+            isVisible={showInteractiveDashboard} 
+          />
+        </div>
+      )}
+
+      {/* Provider Details Modal */}
+      {isModalOpen && selectedProvider && (
+        <ProviderDetailsModal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          providerName={selectedProvider}
+          prediction={getSelectedProviderPrediction()}
+        />
       )}
     </div>
   );

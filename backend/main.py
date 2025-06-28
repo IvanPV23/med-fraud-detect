@@ -7,14 +7,24 @@ import json
 from typing import List, Dict, Any
 import logging
 import pandas as pd
+from pydantic import BaseModel
 
 # Importar agentes
 from agents.ingestor import DataIngestor, process_test_files
 from agents.predictor import FraudPredictor
+from agents.dashboard_ingestor import process_dashboard_files
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Modelo para predicción individual
+class SinglePredictionRequest(BaseModel):
+    Provider: str
+    Total_Reimbursed: float
+    Claim_Count: int
+    Unique_Beneficiaries: int
+    Pct_Male: float
 
 # Crear aplicación FastAPI
 app = FastAPI(
@@ -71,13 +81,94 @@ async def upload_file(file: UploadFile = File(...)):
 @app.post("/ingest")
 async def ingest_data():
     """
-    Procesa los 4 archivos de test en data/test_uploaded/ y genera test_final.csv real.
+    Procesa los 4 archivos de test en data/test_uploaded/ y genera tanto test_final.csv como test_dashboard.csv.
     """
     try:
+        # Ejecutar ingestor normal para test_final.csv
+        logger.info("Ejecutando ingestor normal...")
         process_test_files()
-        return {"success": True, "message": "Procesamiento de archivos de test completado"}
+        
+        # Ejecutar ingestor de dashboard para test_dashboard.csv
+        logger.info("Ejecutando ingestor de dashboard...")
+        success = process_dashboard_files()
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Error generando datos de dashboard")
+        
+        return {
+            "success": True, 
+            "message": "Procesamiento completado: test_final.csv y test_dashboard.csv generados"
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en procesamiento: {str(e)}")
+
+@app.post("/generate-dashboard")
+async def generate_dashboard():
+    """
+    Genera datos de dashboard agregados por proveedor.
+    """
+    try:
+        success = process_dashboard_files()
+        if success:
+            return {"success": True, "message": "Dashboard generado exitosamente"}
+        else:
+            raise HTTPException(status_code=500, detail="Error generando dashboard")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generando dashboard: {str(e)}")
+
+@app.get("/api/dashboard-data")
+async def get_dashboard_data():
+    """Obtiene datos agregados para el dashboard"""
+    try:
+        # Generar datos de dashboard si no existen
+        dashboard_file = os.path.join("data", "test_dashboard", "test_dashboard.csv")
+        if not os.path.exists(dashboard_file):
+            logger.info("Generando datos de dashboard...")
+            success = process_dashboard_files()
+            if not success:
+                return {"success": False, "error": "Error generando dashboard"}
+        
+        # Cargar datos de dashboard
+        dashboard_df = pd.read_csv(dashboard_file)
+        logger.info(f"Datos de dashboard cargados: {len(dashboard_df)} providers")
+        
+        # Convertir a lista de diccionarios para el frontend
+        dashboard_data = dashboard_df.to_dict('records')
+        
+        return {
+            "success": True,
+            "data": dashboard_data
+        }
+        
+    except Exception as e:
+        logger.error(f"Error cargando datos de dashboard: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/provider-details/{provider_name}")
+async def get_provider_details(provider_name: str):
+    """
+    Obtiene detalles específicos de un proveedor para el modal.
+    """
+    try:
+        dashboard_file = os.path.join("data", "test_dashboard", "test_dashboard.csv")
+        if not os.path.exists(dashboard_file):
+            raise HTTPException(
+                status_code=404,
+                detail="No se encontró el archivo de dashboard. Ejecute /ingest primero."
+            )
+        
+        df = pd.read_csv(dashboard_file)
+        provider_data = df[df['Provider'] == provider_name]
+        
+        if provider_data.empty:
+            raise HTTPException(status_code=404, detail=f"Proveedor '{provider_name}' no encontrado")
+        
+        return {
+            "success": True,
+            "provider": provider_data.iloc[0].to_dict()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error obteniendo detalles del proveedor: {str(e)}")
 
 @app.post("/predict")
 async def predict_fraud():
@@ -139,6 +230,50 @@ def test_final_preview():
         return JSONResponse(content=preview)
     except Exception as e:
         return JSONResponse(content={'error': str(e)}, status_code=500)
+
+@app.post("/predict-single")
+async def predict_single(request: SinglePredictionRequest):
+    """
+    Realiza una predicción individual con los datos proporcionados.
+    Calcula automáticamente Mean_Reimbursed = Total_Reimbursed / Claim_Count
+    """
+    try:
+        # Validar datos
+        if request.Claim_Count <= 0:
+            raise HTTPException(status_code=400, detail="Claim_Count debe ser mayor a 0")
+        
+        if request.Pct_Male < 0 or request.Pct_Male > 1:
+            raise HTTPException(status_code=400, detail="Pct_Male debe estar entre 0 y 1")
+        
+        # Calcular Mean_Reimbursed automáticamente
+        mean_reimbursed = request.Total_Reimbursed / request.Claim_Count
+        
+        # Crear DataFrame con los datos
+        data = {
+            'Provider': [request.Provider],
+            'Total_Reimbursed': [request.Total_Reimbursed],
+            'Mean_Reimbursed': [mean_reimbursed],
+            'Claim_Count': [request.Claim_Count],
+            'Unique_Beneficiaries': [request.Unique_Beneficiaries],
+            'Pct_Male': [request.Pct_Male]
+        }
+        
+        df = pd.DataFrame(data)
+        
+        # Realizar predicción
+        predictions = predictor.predict_from_dataframe(df)
+        
+        if not predictions:
+            raise HTTPException(status_code=500, detail="Error en la predicción")
+        
+        return {
+            "success": True,
+            "prediction": predictions[0],
+            "calculated_mean_reimbursed": mean_reimbursed
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en predicción individual: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

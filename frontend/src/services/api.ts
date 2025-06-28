@@ -28,6 +28,20 @@ export interface PredictResponse {
   total_providers: number;
 }
 
+export interface SinglePredictionRequest {
+  Provider: string;
+  Total_Reimbursed: number;
+  Claim_Count: number;
+  Unique_Beneficiaries: number;
+  Pct_Male: number;
+}
+
+export interface SinglePredictionResponse {
+  success: boolean;
+  prediction: PredictionResult;
+  calculated_mean_reimbursed: number;
+}
+
 export interface MetricsResponse {
   success: boolean;
   metrics: {
@@ -49,6 +63,33 @@ export interface MetricsResponse {
     n_features: number;
     model_path: string;
   };
+}
+
+export interface DashboardDataResponse {
+  success: boolean;
+  data: Array<{
+    Provider: string;
+    Total_Reimbursed: number;
+    Mean_Reimbursed: number;
+    Claim_Count: number;
+    Unique_Beneficiaries: number;
+    Avg_Beneficiary_Age: number;
+    Pct_Male: number;
+    [key: string]: any;
+  }>;
+}
+
+export interface ProviderDetailsResponse {
+  success: boolean;
+  provider: any;
+}
+
+export interface GenerateDashboardResponse {
+  success: boolean;
+  message: string;
+  output_path: string;
+  total_providers: number;
+  columns: string[];
 }
 
 class ApiService {
@@ -114,12 +155,33 @@ class ApiService {
     });
   }
 
+  async predictSingle(data: SinglePredictionRequest): Promise<SinglePredictionResponse> {
+    return this.makeRequest<SinglePredictionResponse>('/predict-single', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async getMetrics(): Promise<MetricsResponse> {
     return this.makeRequest<MetricsResponse>('/metricas');
   }
 
   async healthCheck(): Promise<{ status: string; model_loaded: boolean }> {
     return this.makeRequest<{ status: string; model_loaded: boolean }>('/health');
+  }
+
+  async generateDashboard(): Promise<GenerateDashboardResponse> {
+    return this.makeRequest<GenerateDashboardResponse>('/generate-dashboard', {
+      method: 'POST',
+    });
+  }
+
+  async getDashboardData(): Promise<DashboardDataResponse> {
+    return this.makeRequest<DashboardDataResponse>('/api/dashboard-data');
+  }
+
+  async getProviderDetails(providerName: string): Promise<ProviderDetailsResponse> {
+    return this.makeRequest<ProviderDetailsResponse>(`/provider-details/${encodeURIComponent(providerName)}`);
   }
 }
 
