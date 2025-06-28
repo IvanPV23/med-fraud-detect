@@ -1,24 +1,23 @@
-import { MessageCircle, Clock } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export function Footer() {
   return (
     <footer className="bg-white border-t border-blue-100 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {/* Chat Assistant Section */}
-        <div className="flex items-center justify-center bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-4 mb-4">
-          <div className="flex items-center space-x-3 text-gray-700">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <MessageCircle className="w-5 h-5 text-blue-600" />
+        {/* Minimal & Attractive AI Assistant Button Section */}
+        <div className="flex items-center justify-center mb-4">
+          <Link
+            to="/ai-assistant"
+            className="flex flex-col items-center px-5 py-3 bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 border border-purple-100 rounded-xl shadow-sm transition-colors duration-150 text-gray-800 min-w-[220px]"
+            aria-label="Go to AI Assistant"
+          >
+            <div className="flex items-center space-x-2 mb-1">
+              <MessageCircle className="w-5 h-5 text-purple-500" />
+              <span className="font-semibold text-base">Need help? Ask the AI Assistant</span>
             </div>
-            <div className="flex-1">
-              <p className="font-medium text-gray-800">Need help? Chat with the audit assistant!</p>
-              <p className="text-sm text-gray-600">Coming soon - AI-powered fraud detection support</p>
-            </div>
-            <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
-              <Clock className="w-3 h-3" />
-              <span>Coming Soon</span>
-            </div>
-          </div>
+            <span className="text-xs text-gray-500">Get answers about medical fraud detection</span>
+          </Link>
         </div>
 
         {/* Footer Content */}
@@ -45,3 +44,7 @@ export function Footer() {
     </footer>
   );
 }
+
+// Animación fade-in sugerida en tu CSS global:
+// .animate-fade-in { animation: fadeIn 0.7s ease; }
+// @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

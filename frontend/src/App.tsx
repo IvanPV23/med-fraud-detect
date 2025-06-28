@@ -5,6 +5,7 @@ import { HomePage } from './components/pages/HomePage';
 import { ModelOverviewPage } from './components/pages/ModelOverviewPage';
 import { BulkInputPage } from './components/pages/BulkInputPage';
 import { SinglePredictionPage } from './components/pages/SinglePredictionPage';
+import { AiAssistantPage } from './components/pages/AiAssistantPage';
 import './App.css';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
             <Route path="/model-overview" element={<ModelOverviewPage />} />
             <Route path="/bulk-input" element={<BulkInputPage />} />
             <Route path="/single-prediction" element={<SinglePredictionPage />} />
+            <Route path="/ai-assistant" element={<AiAssistantPage />} />
           </Routes>
         </main>
         

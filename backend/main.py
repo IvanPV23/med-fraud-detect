@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import os
@@ -23,6 +23,9 @@ from agents.lime_explainer import LIMEExplainer
 # Para Gemini AI (opcional)
 import requests
 from datetime import datetime, timedelta
+
+# Importar AI Assistant
+from utils.ai_assistant import ai_assistant_chat
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -700,6 +703,16 @@ async def test_lime():
             "error": str(e),
             "test": "LIME explainer failed"
         }
+
+@app.post("/ai-assistant/chat")
+async def ai_assistant_endpoint(
+    user_message: str = Body(..., embed=True),
+    context: dict = Body({}, embed=True)
+):
+    """
+    Endpoint para interactuar con el AI Assistant especializado en fraude médico.
+    """
+    return await ai_assistant_chat(user_message, context)
 
 if __name__ == "__main__":
     import uvicorn

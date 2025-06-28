@@ -40,6 +40,10 @@ interface ModelMetrics {
     fpr: number;
     tpr: number;
   }>;
+  shap_feature_importance?: Array<{
+    feature: string;
+    importance: number;
+  }>;
 }
 
 export function ModelOverviewPage() {
@@ -52,80 +56,47 @@ export function ModelOverviewPage() {
   useEffect(() => {
     const loadMetrics = async () => {
       try {
-        // Cargar métricas desde la API
-        const response = await apiService.getMetrics();
-        setApiMetrics(response);
-        
-        // Cargar SHAP data desde la API
-        try {
-          const shapResponse = await apiService.getSHAPModelOverview();
-          if (shapResponse.success) {
-            console.log('SHAP data loaded successfully:', shapResponse);
-            setShapData(shapResponse);
-          }
-        } catch (shapErr) {
-          console.error('Error loading SHAP data:', shapErr);
-          // Continue without SHAP data
-        }
-        
-        // Convertir formato de API a formato esperado por el componente
-        if (response.success) {
-          const convertedMetrics: ModelMetrics = {
-            model_info: {
-              name: "XGBoost Fraud Detection Model",
-              type: response.model_info.model_type,
-              version: "1.0.0",
-              training_date: new Date().toISOString().split('T')[0], // Fecha actual como placeholder
-              samples_trained: 4328, // Valor basado en confusion matrix
-              features: response.model_info.n_features
-            },
-            performance_metrics: {
-              precision: response.metrics.precision,
-              recall: response.metrics.recall,
-              f1_score: response.metrics.f1_score,
-              roc_auc: response.metrics.roc_auc,
-              specificity: 0.94, // Calculado desde confusion matrix
-              negative_predictive_value: 0.91
-            },
-            confusion_matrix: {
-              true_positive: response.metrics.confusion_matrix[1][1],
-              false_positive: response.metrics.confusion_matrix[0][1],
-              true_negative: response.metrics.confusion_matrix[0][0],
-              false_negative: response.metrics.confusion_matrix[1][0]
-            },
-            feature_importance: [
-              { feature: 'Total_Reimbursed', importance: 0.773985 },
-              { feature: 'Unique_Beneficiaries', importance: 0.066117 },
-              { feature: 'Claim_Count', importance: 0.054405 },
-              { feature: 'Pct_Male', importance: 0.053767 },
-              { feature: 'Mean_Reimbursed', importance: 0.051726 }
-            ],
-            best_params: response.metrics.best_params,
-            roc_curve_data: [
-              { fpr: 0, tpr: 0 },
-              { fpr: 0.1, tpr: 0.3 },
-              { fpr: 0.2, tpr: 0.5 },
-              { fpr: 0.3, tpr: 0.7 },
-              { fpr: 0.4, tpr: 0.8 },
-              { fpr: 0.5, tpr: 0.85 },
-              { fpr: 0.6, tpr: 0.9 },
-              { fpr: 0.7, tpr: 0.93 },
-              { fpr: 0.8, tpr: 0.95 },
-              { fpr: 0.9, tpr: 0.97 },
-              { fpr: 1, tpr: 1 }
-            ]
-          };
-          
-          setMetrics(convertedMetrics);
-        }
+        // Cargar métricas desde el archivo JSON en public/data
+        const response = await fetch('/data/xgb_fraud_metrics.json');
+        if (!response.ok) throw new Error('No se pudo cargar xgb_fraud_metrics.json');
+        const data = await response.json();
+
+        // Mapear al formato ModelMetrics
+        const convertedMetrics: ModelMetrics = {
+          model_info: {
+            name: "XGBoost Fraud Detection Model",
+            type: "XGBoost",
+            version: "1.0.0",
+            training_date: new Date().toISOString().split('T')[0],
+            samples_trained: data.confusion_matrix[0][0] + data.confusion_matrix[0][1] + data.confusion_matrix[1][0] + data.confusion_matrix[1][1],
+            features: data.feature_importance.length
+          },
+          performance_metrics: {
+            precision: data.precision,
+            recall: data.recall,
+            f1_score: data.f1_score,
+            roc_auc: data.roc_auc,
+            specificity: 0, // Puedes calcularlo si lo necesitas
+            negative_predictive_value: 0 // Puedes calcularlo si lo necesitas
+          },
+          confusion_matrix: {
+            true_positive: data.confusion_matrix[1][1],
+            false_positive: data.confusion_matrix[0][1],
+            true_negative: data.confusion_matrix[0][0],
+            false_negative: data.confusion_matrix[1][0]
+          },
+          feature_importance: data.feature_importance.map((f: any) => ({ feature: f.feature, importance: f.importance })),
+          best_params: data.best_params,
+          roc_curve_data: [], // Si tienes datos de curva ROC, agrégalos aquí
+          shap_feature_importance: data.shap_feature_importance ? data.shap_feature_importance.map((f: any) => ({ feature: f.feature, importance: f.importance })) : undefined
+        };
+        setMetrics(convertedMetrics);
       } catch (err) {
-        console.error('Error loading model metrics:', err);
         setError(err instanceof Error ? err.message : 'Error loading metrics');
       } finally {
         setLoading(false);
       }
     };
-
     loadMetrics();
   }, []);
 
@@ -182,7 +153,9 @@ export function ModelOverviewPage() {
   ];
 
   // SHAP y Model Feature Importance
-  const shapFeatureImportance = shapData?.shap_explanations?.feature_importance || [];
+  const shapFeatureImportance = (metrics.shap_feature_importance && metrics.shap_feature_importance.length > 0)
+    ? metrics.shap_feature_importance
+    : metrics.feature_importance || [];
   const modelFeatureImportance = metrics.feature_importance || [];
   const bestParams = metrics.best_params;
 

@@ -136,6 +136,12 @@ export interface GenerateDashboardResponse {
   columns: string[];
 }
 
+export interface AiAssistantResponse {
+  success: boolean;
+  response: string;
+  lang: string;
+}
+
 class ApiService {
   private baseUrl: string;
 
@@ -391,6 +397,18 @@ class ApiService {
       console.error('Error in chatbot analysis:', error);
       throw error;
     }
+  }
+
+  async aiAssistantChat(user_message: string, context: any = {}): Promise<AiAssistantResponse> {
+    const response = await fetch(`${this.baseUrl}/ai-assistant/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_message, context })
+    });
+    if (!response.ok) {
+      throw new Error('Error al comunicarse con el asistente de IA');
+    }
+    return await response.json();
   }
 }
 

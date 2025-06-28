@@ -1,6 +1,39 @@
 # Sistema de Detección de Fraude Médico
 
-Un sistema completo para la detección de fraude en reclamaciones médicas utilizando machine learning con XGBoost y una interfaz web moderna.
+Un sistema completo de detección de fraude médico que combina machine learning con interpretabilidad avanzada (SHAP y LIME) y un asistente de IA especializado.
+
+## Características Principales
+
+### 🤖 AI Assistant Inteligente
+- **Contexto Enriquecido**: El AI Assistant tiene acceso completo a:
+  - Datos del proveedor (reembolsos, reclamos, beneficiarios, etc.)
+  - Resultados de predicción (probabilidad de fraude, nivel de riesgo)
+  - Explicaciones SHAP (contribución exacta de cada feature)
+  - Explicaciones LIME (interpretación local del modelo)
+  - Métricas del dashboard (condiciones crónicas, distribución de género)
+  - Comparación entre métodos de interpretabilidad
+
+- **Preguntas Sugeridas Adaptativas**: 
+  - Se adaptan según el resultado de la predicción (fraude/no fraude)
+  - Incluyen preguntas específicas sobre SHAP, LIME y condiciones crónicas
+  - Proporcionan insights relevantes al contexto del proveedor
+
+- **Análisis Multilingüe**: 
+  - Detecta automáticamente el idioma dominante de la conversación
+  - Responde siempre en el idioma principal del usuario
+  - Soporte para español, inglés y portugués
+
+### 📊 Interpretabilidad Avanzada
+- **SHAP (SHapley Additive exPlanations)**: Explicaciones precisas de la contribución de cada feature
+- **LIME (Local Interpretable Model-agnostic Explanations)**: Interpretación local para predicciones específicas
+- **Comparación de Métodos**: Análisis de acuerdo entre SHAP y LIME
+- **Visualizaciones Interactivas**: Gráficos de contribución de features con impacto positivo/negativo
+
+### 🏥 Análisis de Proveedores
+- **Dashboard Completo**: Métricas clave, condiciones crónicas, distribución demográfica
+- **Predicciones Individuales**: Análisis detallado por proveedor
+- **Análisis Masivo**: Procesamiento de múltiples proveedores
+- **Métricas de Rendimiento**: ROC-AUC, precisión, recall, F1-score
 
 ## 🏗️ Arquitectura del Sistema
 

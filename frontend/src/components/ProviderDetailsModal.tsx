@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Search, BarChart3, PieChart, MessageCircle, AlertTriangle, CheckCircle } from 'lucide-react';
 import { BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { apiService, PredictionResult } from '../services/api';
+import { AiAssistantChat } from './ui/AiAssistantChat';
 
 interface ProviderDetailsModalProps {
   isOpen: boolean;
@@ -126,7 +127,7 @@ export function ProviderDetailsModal({ isOpen, onClose, providerName, prediction
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] flex flex-col" style={{height: '90vh'}}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
@@ -184,7 +185,7 @@ export function ProviderDetailsModal({ isOpen, onClose, providerName, prediction
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div className="p-6 flex-1 min-h-0 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -486,120 +487,48 @@ export function ProviderDetailsModal({ isOpen, onClose, providerName, prediction
 
               {/* Chatbot Tab */}
               {activeTab === 'chatbot' && (
-                <div className="space-y-6">
-                  {/* AI Assistant Header */}
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-                        <MessageCircle className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">AI Fraud Analysis Assistant</h3>
-                        <p className="text-sm text-gray-600">Powered by Gemini AI</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <p className="text-gray-700">
-                        This AI assistant analyzes fraud detection results and provides intelligent insights about provider patterns and risk factors.
-                      </p>
-                      
-                      <div className="bg-white border border-gray-200 rounded-lg p-4">
-                        <p className="text-sm font-medium text-gray-800 mb-3">💡 Suggested questions:</p>
-                        <div className="grid md:grid-cols-2 gap-3">
-                          <div className="bg-purple-50 rounded-lg p-3">
-                            <p className="text-sm text-purple-800">"Why did the model flag this provider as potential fraud?"</p>
-                          </div>
-                          <div className="bg-purple-50 rounded-lg p-3">
-                            <p className="text-sm text-purple-800">"What patterns suggest suspicious activity?"</p>
-                          </div>
-                          <div className="bg-purple-50 rounded-lg p-3">
-                            <p className="text-sm text-purple-800">"How does this provider compare to others?"</p>
-                          </div>
-                          <div className="bg-purple-50 rounded-lg p-3">
-                            <p className="text-sm text-purple-800">"What specific metrics contributed most?"</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Chat Interface */}
-                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                    {/* Chat Header */}
-                    <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                          <MessageCircle className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">AI Assistant</p>
-                          <p className="text-xs text-gray-500">Analyzing {providerName}</p>
-                        </div>
-                        <div className="ml-auto">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Chat Messages */}
-                    <div className="h-96 overflow-y-auto p-6 space-y-4">
-                      {/* AI Welcome Message */}
-                      <div className="flex items-start space-x-3">
-                        <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                          <MessageCircle className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="bg-purple-50 rounded-lg p-4 max-w-sm">
-                          <p className="text-sm text-gray-800">
-                            Hello! I'm here to help you understand the fraud detection analysis for <strong>{providerName}</strong>. 
-                            I can explain the model's decision, analyze patterns, and provide insights. What would you like to know?
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Context Info */}
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <p className="text-xs font-medium text-blue-800 mb-2">📊 Current Context:</p>
-                        <div className="grid grid-cols-2 gap-2 text-xs text-blue-700">
-                          <div>Provider: {providerName}</div>
-                          <div>Fraud Probability: {prediction ? `${(prediction.Probabilidad_Fraude * 100).toFixed(1)}%` : 'N/A'}</div>
-                          <div>Result: {prediction ? (prediction.Prediccion === 1 ? 'FRAUD DETECTED' : 'NO FRAUD') : 'N/A'}</div>
-                          <div>Risk Level: {prediction ? (
-                            prediction.Probabilidad_Fraude > 0.7 ? 'High Risk' :
-                            prediction.Probabilidad_Fraude > 0.5 ? 'Medium Risk' : 'Low Risk'
-                          ) : 'N/A'}</div>
-                        </div>
-                      </div>
-
-                      {/* Placeholder for future messages */}
-                      <div className="text-center text-gray-400 text-sm py-8">
-                        <MessageCircle className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                        <p>Chat interface ready for Gemini AI integration</p>
-                      </div>
-                    </div>
-
-                    {/* Chat Input */}
-                    <div className="border-t border-gray-200 p-4">
-                      <div className="flex space-x-3">
-                        <input
-                          type="text"
-                          placeholder="Ask about fraud analysis, patterns, or explanations..."
-                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                          disabled
-                        />
-                        <button
-                          className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                          disabled
-                        >
-                          Send
-                        </button>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Gemini AI integration coming soon. This will provide intelligent analysis and explanations.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <AiAssistantChat
+                  styleVariant="card"
+                  context={{ 
+                    provider: providerData, 
+                    prediction,
+                    explanations,
+                    dashboard: {
+                      provider: providerData,
+                      chronicConditions: getChronicConditions(),
+                      genderData: getGenderData(),
+                      keyMetrics: {
+                        totalReimbursed: providerData?.Total_Reimbursed,
+                        meanReimbursed: providerData?.Mean_Reimbursed,
+                        claimCount: providerData?.Claim_Count,
+                        uniqueBeneficiaries: providerData?.Unique_Beneficiaries,
+                        avgAge: providerData?.Avg_Age,
+                        pctMale: providerData?.Pct_Male
+                      }
+                    }
+                  }}
+                  suggestedQuestions={
+                    prediction && prediction.Prediccion === 1
+                      ? [
+                          '¿Por qué el modelo marcó este proveedor como posible fraude?',
+                          '¿Qué patrones sugieren actividad sospechosa?',
+                          '¿Qué métricas específicas contribuyeron más?',
+                          '¿Cómo se compara este proveedor con otros?',
+                          '¿Qué nos dicen las explicaciones SHAP y LIME?',
+                          '¿Qué condiciones crónicas son más relevantes?'
+                        ]
+                      : [
+                          '¿Por qué el modelo considera que este proveedor no es fraudulento?',
+                          '¿Qué patrones sugieren actividad normal?',
+                          '¿Qué métricas contribuyeron a la clasificación como no fraude?',
+                          '¿Cómo se compara este proveedor con otros?',
+                          '¿Qué nos dicen las explicaciones SHAP y LIME?',
+                          '¿Qué condiciones crónicas son más relevantes?'
+                        ]
+                  }
+                  title="AI Assistant"
+                  description="This assistant analyzes fraud results and provides intelligent insights about this provider."
+                />
               )}
             </>
           )}

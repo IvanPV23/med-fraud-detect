@@ -3,6 +3,7 @@ import { Upload, FileText, Play, Download, AlertCircle, CheckCircle, X, Eye, Use
 import { apiService, PredictionResult as ApiPredictionResult } from '../../services/api';
 import { ProviderDetailsModal } from '../ProviderDetailsModal';
 import { InteractiveDashboard } from '../InteractiveDashboard';
+import { AiAssistantChat } from '../ui/AiAssistantChat';
 
 interface FileUpload {
   file: File;

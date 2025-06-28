@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { User, Calculator, AlertTriangle, CheckCircle, X, Play, RefreshCw, MessageCircle } from 'lucide-react';
+import { User, Calculator, AlertTriangle, CheckCircle, X, Play, RefreshCw, MessageCircle, BarChart3 } from 'lucide-react';
 import { apiService, SinglePredictionRequest, PredictionResult } from '../../services/api';
+import { AiAssistantChat } from '../ui/AiAssistantChat';
 
 interface PredictionForm {
   Provider: string;
@@ -223,16 +224,17 @@ export function SinglePredictionPage() {
               : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
-          <AlertTriangle className="w-4 h-4" />
+          <BarChart3 className="w-4 h-4" />
           <span>Interpretability</span>
         </button>
         <button
-          onClick={() => setActiveTab('chatbot')}
+          onClick={() => prediction && setActiveTab('chatbot')}
           className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'chatbot'
               ? 'border-purple-500 text-purple-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
+              : 'border-transparent text-gray-400'
+          } ${!prediction ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={!prediction}
         >
           <MessageCircle className="w-4 h-4" />
           <span>AI Assistant</span>
@@ -567,120 +569,30 @@ export function SinglePredictionPage() {
       )}
 
       {activeTab === 'chatbot' && (
-        <div className="space-y-6">
-          {/* AI Assistant Header */}
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-                <MessageCircle className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">AI Fraud Analysis Assistant</h3>
-                <p className="text-sm text-gray-600">Powered by Gemini AI</p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <p className="text-gray-700">
-                This AI assistant analyzes fraud detection results and provides intelligent insights about the prediction and feature contributions.
-              </p>
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-gray-800 mb-3">💡 Suggested questions:</p>
-                <div className="grid md:grid-cols-2 gap-3">
-                  <div className="bg-purple-50 rounded-lg p-3">
-                    <p className="text-sm text-purple-800">"Why did the model flag this as potential fraud?"</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-lg p-3">
-                    <p className="text-sm text-purple-800">"What features contributed most?"</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-lg p-3">
-                    <p className="text-sm text-purple-800">"How can this reduce fraud risk?"</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-lg p-3">
-                    <p className="text-sm text-purple-800">"What does LIME/SHAP mean?"</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+        prediction ? (
+          <AiAssistantChat
+            styleVariant="card"
+            context={{ prediction, formData }}
+            suggestedQuestions={[
+              prediction.Prediccion === 1
+                ? '¿Por qué el modelo marcó este caso como posible fraude?'
+                : '¿Por qué el modelo considera que este caso no es fraudulento?',
+              prediction.Prediccion === 1
+                ? '¿Qué métricas contribuyeron más a la predicción?'
+                : '¿Qué métricas contribuyeron a la clasificación como no fraude?',
+              '¿Cómo puedo reducir el riesgo de fraude?',
+              '¿Qué significa la explicación LIME/SHAP?'
+            ]}
+            title="AI Fraud Analysis Assistant"
+            description="This assistant analyzes the individual prediction and provides intelligent insights about the case."
+          />
+        ) : (
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-6 text-center text-purple-700">
+            <MessageCircle className="w-8 h-8 mx-auto mb-2 text-purple-400" />
+            <p className="font-medium">Run a prediction first to enable the AI Assistant.</p>
+            <p className="text-sm text-purple-500 mt-1">The assistant will be available once you have prediction results to analyze.</p>
           </div>
-
-          {/* Chat Interface */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            {/* Chat Header */}
-            <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                  <MessageCircle className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">AI Assistant</p>
-                  <p className="text-xs text-gray-500">Analyzing prediction results</p>
-                </div>
-                <div className="ml-auto">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                </div>
-              </div>
-            </div>
-
-            {/* Chat Messages */}
-            <div className="h-96 overflow-y-auto p-6 space-y-4">
-              {/* AI Welcome Message */}
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <MessageCircle className="w-4 h-4 text-white" />
-                </div>
-                <div className="bg-purple-50 rounded-lg p-4 max-w-sm">
-                  <p className="text-sm text-gray-800">
-                    Hello! I'm here to help you understand the fraud detection prediction. 
-                    I can explain the model's decision, analyze feature contributions, and provide insights. What would you like to know?
-                  </p>
-                </div>
-              </div>
-
-              {/* Context Info */}
-              {prediction && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-xs font-medium text-blue-800 mb-2">📊 Current Context:</p>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-blue-700">
-                    <div>Provider: {formData.Provider}</div>
-                    <div>Fraud Probability: {(prediction.Probabilidad_Fraude * 100).toFixed(1)}%</div>
-                    <div>Result: {prediction.Prediccion === 1 ? 'FRAUD DETECTED' : 'NO FRAUD'}</div>
-                    <div>Risk Level: {
-                      prediction.Probabilidad_Fraude > 0.7 ? 'High Risk' :
-                      prediction.Probabilidad_Fraude > 0.5 ? 'Medium Risk' : 'Low Risk'
-                    }</div>
-                  </div>
-                </div>
-              )}
-
-              {/* Placeholder for future messages */}
-              <div className="text-center text-gray-400 text-sm py-8">
-                <MessageCircle className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                <p>Chat interface ready for Gemini AI integration</p>
-              </div>
-            </div>
-
-            {/* Chat Input */}
-            <div className="border-t border-gray-200 p-4">
-              <div className="flex space-x-3">
-                <input
-                  type="text"
-                  placeholder="Ask about fraud analysis, feature contributions, or explanations..."
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                  disabled
-                />
-                <button
-                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                  disabled
-                >
-                  Send
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Gemini AI integration coming soon. This will provide intelligent analysis and explanations.
-              </p>
-            </div>
-          </div>
-        </div>
+        )
       )}
     </div>
   );

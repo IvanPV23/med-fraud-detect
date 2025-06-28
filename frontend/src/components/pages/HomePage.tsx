@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Shield, BarChart3, Upload, FileText, ChevronRight, Activity, Users, DollarSign, AlertTriangle } from 'lucide-react';
+import { AiAssistantChat } from '../ui/AiAssistantChat';
 
 export function HomePage() {
   const features = [

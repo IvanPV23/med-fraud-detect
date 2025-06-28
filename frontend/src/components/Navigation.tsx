@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Shield, Activity, FileText, Upload, BarChart3 } from 'lucide-react';
+import { Shield, Activity, FileText, Upload, BarChart3, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function Navigation() {
@@ -10,6 +10,7 @@ export function Navigation() {
     { to: '/model-overview', label: 'Model Overview', icon: BarChart3 },
     { to: '/bulk-input', label: 'Bulk Upload', icon: Upload },
     { to: '/single-prediction', label: 'Single Prediction', icon: FileText },
+    { to: '/ai-assistant', label: 'AI Assistant', icon: MessageCircle },
   ];
 
   return (
