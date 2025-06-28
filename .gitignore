@@ -10,6 +10,11 @@ __pycache__/
 
 # VSCode
 .vscode/
+test_shap_values.py
+test_lime_direct.py
+test_api.py
+test_ingest.py
+test_lime_endpoint.py
 
 # Node/React
 frontend/node_modules/

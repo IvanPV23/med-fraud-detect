@@ -36,10 +36,14 @@ export function ProviderDetailsModal({ isOpen, onClose, providerName, prediction
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'prediction' | 'dashboard' | 'chatbot'>('prediction');
+  const [explanations, setExplanations] = useState<any>(null);
+  const [explanationsLoading, setExplanationsLoading] = useState(false);
+  const [explanationsError, setExplanationsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && providerName) {
       fetchProviderDetails();
+      fetchExplanations();
     }
   }, [isOpen, providerName]);
 
@@ -57,6 +61,23 @@ export function ProviderDetailsModal({ isOpen, onClose, providerName, prediction
       setError(err instanceof Error ? err.message : 'Error loading provider details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchExplanations = async () => {
+    setExplanationsLoading(true);
+    setExplanationsError(null);
+    try {
+      const response = await apiService.compareExplanations(providerName);
+      if (response.success) {
+        setExplanations(response.comparison);
+      } else {
+        setExplanationsError('Failed to load explanations');
+      }
+    } catch (err) {
+      setExplanationsError(err instanceof Error ? err.message : 'Error loading explanations');
+    } finally {
+      setExplanationsLoading(false);
     }
   };
 
@@ -231,6 +252,138 @@ export function ProviderDetailsModal({ isOpen, onClose, providerName, prediction
                       </div>
                     </div>
                   </div>
+                  {/* Interpretability Section */}
+                  <div className="mt-8">
+                    <h3 className="text-lg font-semibold text-purple-900 mb-4 flex items-center">
+                      <BarChart3 className="w-5 h-5 mr-2 text-purple-600" />
+                      Model Interpretability (LIME & SHAP)
+                    </h3>
+                    {explanationsLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                        <span className="ml-3 text-gray-600">Loading explanations...</span>
+                      </div>
+                    ) : explanationsError ? (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="flex items-center">
+                          <AlertTriangle className="w-5 h-5 text-red-600 mr-2" />
+                          <span className="text-red-700">{explanationsError}</span>
+                        </div>
+                      </div>
+                    ) : explanations ? (
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {/* LIME Explanation */}
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
+                          <div className="flex items-center space-x-2 mb-4">
+                            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                              <BarChart3 className="w-4 h-4 text-green-600" />
+                            </div>
+                            <h4 className="text-lg font-semibold text-green-900">LIME Explanation</h4>
+                          </div>
+                          <p className="text-sm text-green-700 mb-4">
+                            Local Interpretable Model-agnostic Explanations show how each feature contributed to this specific prediction.
+                          </p>
+                          {explanations.lime_explanation?.feature_contributions?.length > 0 ? (
+                            <div className="space-y-3">
+                              {explanations.lime_explanation.feature_contributions.map((item: any, idx: number) => (
+                                <div key={idx} className="bg-white rounded-lg p-3 border border-green-100">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className="font-medium text-gray-900 text-sm">{item.feature}</span>
+                                    <div className="flex items-center space-x-2">
+                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                        item.impact === 'positive' 
+                                          ? 'bg-green-100 text-green-800' 
+                                          : 'bg-red-100 text-red-800'
+                                      }`}>
+                                        {item.impact === 'positive' ? '↑ Positive' : '↓ Negative'}
+                                      </span>
+                                      <span className="text-xs text-gray-500 font-mono">
+                                        {item.weight.toFixed(3)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-xs text-gray-600">Value: {item.value.toLocaleString()}</span>
+                                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                      <div 
+                                        className={`h-2 rounded-full transition-all duration-300 ${
+                                          item.impact === 'positive' ? 'bg-green-500' : 'bg-red-500'
+                                        }`}
+                                        style={{ 
+                                          width: `${Math.min(Math.abs(item.weight) * 100, 100)}%`,
+                                          maxWidth: '100%'
+                                        }}
+                                      ></div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center text-gray-500 py-8">
+                              <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                              <p>No LIME explanation available</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* SHAP Explanation */}
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+                          <div className="flex items-center space-x-2 mb-4">
+                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                              <BarChart3 className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <h4 className="text-lg font-semibold text-blue-900">SHAP Explanation</h4>
+                          </div>
+                          <p className="text-sm text-blue-700 mb-4">
+                            SHapley Additive exPlanations show the exact contribution of each feature to the prediction.
+                          </p>
+                          {explanations.shap_explanation?.feature_contributions?.length > 0 ? (
+                            <div className="space-y-3">
+                              {explanations.shap_explanation.feature_contributions.map((item: any, idx: number) => (
+                                <div key={idx} className="bg-white rounded-lg p-3 border border-blue-100">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className="font-medium text-gray-900 text-sm">{item.feature}</span>
+                                    <div className="flex items-center space-x-2">
+                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                        item.impact === 'positive' 
+                                          ? 'bg-blue-100 text-blue-800' 
+                                          : 'bg-red-100 text-red-800'
+                                      }`}>
+                                        {item.impact === 'positive' ? '↑ Positive' : '↓ Negative'}
+                                      </span>
+                                      <span className="text-xs text-gray-500 font-mono">
+                                        {item.shap_value?.toFixed(3) ?? 'N/A'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-xs text-gray-600">Value: {item.value.toLocaleString()}</span>
+                                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                      <div 
+                                        className={`h-2 rounded-full transition-all duration-300 ${
+                                          item.impact === 'positive' ? 'bg-blue-500' : 'bg-red-500'
+                                        }`}
+                                        style={{ 
+                                          width: `${Math.min(Math.abs(item.shap_value || 0) * 100, 100)}%`,
+                                          maxWidth: '100%'
+                                        }}
+                                      ></div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center text-gray-500 py-8">
+                              <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                              <p>No SHAP explanation available</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               )}
 
@@ -334,7 +487,8 @@ export function ProviderDetailsModal({ isOpen, onClose, providerName, prediction
               {/* Chatbot Tab */}
               {activeTab === 'chatbot' && (
                 <div className="space-y-6">
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
+                  {/* AI Assistant Header */}
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
                     <div className="flex items-center space-x-3 mb-4">
                       <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
                         <MessageCircle className="w-5 h-5 text-white" />
@@ -347,35 +501,103 @@ export function ProviderDetailsModal({ isOpen, onClose, providerName, prediction
                     
                     <div className="space-y-4">
                       <p className="text-gray-700">
-                        This AI assistant will help you understand the fraud detection results and provide insights about the provider's patterns.
+                        This AI assistant analyzes fraud detection results and provides intelligent insights about provider patterns and risk factors.
                       </p>
                       
                       <div className="bg-white border border-gray-200 rounded-lg p-4">
-                        <p className="text-sm text-gray-600 mb-2">Suggested questions:</p>
-                        <ul className="text-sm text-gray-700 space-y-1">
-                          <li>• "Why did the model flag this provider as potential fraud?"</li>
-                          <li>• "What patterns in the data suggest suspicious activity?"</li>
-                          <li>• "How does this provider compare to others in the dataset?"</li>
-                          <li>• "What specific metrics contributed to the fraud score?"</li>
-                        </ul>
+                        <p className="text-sm font-medium text-gray-800 mb-3">💡 Suggested questions:</p>
+                        <div className="grid md:grid-cols-2 gap-3">
+                          <div className="bg-purple-50 rounded-lg p-3">
+                            <p className="text-sm text-purple-800">"Why did the model flag this provider as potential fraud?"</p>
+                          </div>
+                          <div className="bg-purple-50 rounded-lg p-3">
+                            <p className="text-sm text-purple-800">"What patterns suggest suspicious activity?"</p>
+                          </div>
+                          <div className="bg-purple-50 rounded-lg p-3">
+                            <p className="text-sm text-purple-800">"How does this provider compare to others?"</p>
+                          </div>
+                          <div className="bg-purple-50 rounded-lg p-3">
+                            <p className="text-sm text-purple-800">"What specific metrics contributed most?"</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
-                        <MessageCircle className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">AI Assistant</p>
-                        <p className="text-xs text-gray-500">Coming soon...</p>
+                  {/* Chat Interface */}
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                    {/* Chat Header */}
+                    <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                          <MessageCircle className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">AI Assistant</p>
+                          <p className="text-xs text-gray-500">Analyzing {providerName}</p>
+                        </div>
+                        <div className="ml-auto">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        </div>
                       </div>
                     </div>
-                    
-                    <p className="text-gray-600 text-sm">
-                      The AI assistant integration is currently under development. This feature will provide intelligent analysis and explanations of fraud detection results using Gemini AI.
-                    </p>
+
+                    {/* Chat Messages */}
+                    <div className="h-96 overflow-y-auto p-6 space-y-4">
+                      {/* AI Welcome Message */}
+                      <div className="flex items-start space-x-3">
+                        <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          <MessageCircle className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="bg-purple-50 rounded-lg p-4 max-w-sm">
+                          <p className="text-sm text-gray-800">
+                            Hello! I'm here to help you understand the fraud detection analysis for <strong>{providerName}</strong>. 
+                            I can explain the model's decision, analyze patterns, and provide insights. What would you like to know?
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Context Info */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-xs font-medium text-blue-800 mb-2">📊 Current Context:</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs text-blue-700">
+                          <div>Provider: {providerName}</div>
+                          <div>Fraud Probability: {prediction ? `${(prediction.Probabilidad_Fraude * 100).toFixed(1)}%` : 'N/A'}</div>
+                          <div>Result: {prediction ? (prediction.Prediccion === 1 ? 'FRAUD DETECTED' : 'NO FRAUD') : 'N/A'}</div>
+                          <div>Risk Level: {prediction ? (
+                            prediction.Probabilidad_Fraude > 0.7 ? 'High Risk' :
+                            prediction.Probabilidad_Fraude > 0.5 ? 'Medium Risk' : 'Low Risk'
+                          ) : 'N/A'}</div>
+                        </div>
+                      </div>
+
+                      {/* Placeholder for future messages */}
+                      <div className="text-center text-gray-400 text-sm py-8">
+                        <MessageCircle className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                        <p>Chat interface ready for Gemini AI integration</p>
+                      </div>
+                    </div>
+
+                    {/* Chat Input */}
+                    <div className="border-t border-gray-200 p-4">
+                      <div className="flex space-x-3">
+                        <input
+                          type="text"
+                          placeholder="Ask about fraud analysis, patterns, or explanations..."
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                          disabled
+                        />
+                        <button
+                          className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                          disabled
+                        >
+                          Send
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Gemini AI integration coming soon. This will provide intelligent analysis and explanations.
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}

@@ -47,6 +47,7 @@ export function ModelOverviewPage() {
   const [apiMetrics, setApiMetrics] = useState<MetricsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [shapData, setShapData] = useState<any>(null);
 
   useEffect(() => {
     const loadMetrics = async () => {
@@ -54,6 +55,18 @@ export function ModelOverviewPage() {
         // Cargar métricas desde la API
         const response = await apiService.getMetrics();
         setApiMetrics(response);
+        
+        // Cargar SHAP data desde la API
+        try {
+          const shapResponse = await apiService.getSHAPModelOverview();
+          if (shapResponse.success) {
+            console.log('SHAP data loaded successfully:', shapResponse);
+            setShapData(shapResponse);
+          }
+        } catch (shapErr) {
+          console.error('Error loading SHAP data:', shapErr);
+          // Continue without SHAP data
+        }
         
         // Convertir formato de API a formato esperado por el componente
         if (response.success) {
@@ -159,14 +172,19 @@ export function ModelOverviewPage() {
   // Datos para la matriz de confusión visual
   const confusionMatrixVisual = [
     [
-      { value: metrics.confusion_matrix.true_negative, label: 'TN', color: '#10B981' },
-      { value: metrics.confusion_matrix.false_positive, label: 'FP', color: '#F59E0B' }
+      { value: metrics.confusion_matrix.true_negative, label: 'TN', color: '#3B82F6', bgColor: '#3B82F6', textColor: '#fff' },
+      { value: metrics.confusion_matrix.false_positive, label: 'FP', color: '#3B82F6', bgColor: '#fff', textColor: '#3B82F6', border: true }
     ],
     [
-      { value: metrics.confusion_matrix.false_negative, label: 'FN', color: '#EF4444' },
-      { value: metrics.confusion_matrix.true_positive, label: 'TP', color: '#3B82F6' }
+      { value: metrics.confusion_matrix.false_negative, label: 'FN', color: '#3B82F6', bgColor: '#fff', textColor: '#3B82F6', border: true },
+      { value: metrics.confusion_matrix.true_positive, label: 'TP', color: '#87CEEB', bgColor: '#87CEEB', textColor: '#fff' }
     ]
   ];
+
+  // SHAP y Model Feature Importance
+  const shapFeatureImportance = shapData?.shap_explanations?.feature_importance || [];
+  const modelFeatureImportance = metrics.feature_importance || [];
+  const bestParams = metrics.best_params;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -183,7 +201,7 @@ export function ModelOverviewPage() {
         </div>
       </div>
 
-      {/* API Metrics Info */}
+      {/* Model Information from API */}
       {apiMetrics && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
           <h3 className="text-lg font-semibold text-blue-900 mb-4">Model Information from API</h3>
@@ -209,58 +227,7 @@ export function ModelOverviewPage() {
         </div>
       )}
 
-      {/* Model Information Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Layers className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Model Type</h3>
-              <p className="text-blue-600 font-medium">{metrics.model_info.type}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <Database className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Training Samples</h3>
-              <p className="text-green-600 font-medium">{metrics.model_info.samples_trained.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Activity className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Features</h3>
-              <p className="text-purple-600 font-medium">{metrics.model_info.features}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Last Trained</h3>
-              <p className="text-amber-600 font-medium">{new Date(metrics.model_info.training_date).toLocaleDateString()}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Key Metrics */}
+      {/* Ocho rectángulos con métricas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
           <div className="flex items-center space-x-3 mb-2">
@@ -269,7 +236,6 @@ export function ModelOverviewPage() {
           </div>
           <p className="text-3xl font-bold text-green-700">{(metrics.performance_metrics.precision * 100).toFixed(1)}%</p>
         </div>
-
         <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
           <div className="flex items-center space-x-3 mb-2">
             <Activity className="w-6 h-6 text-purple-600" />
@@ -277,7 +243,6 @@ export function ModelOverviewPage() {
           </div>
           <p className="text-3xl font-bold text-purple-700">{(metrics.performance_metrics.recall * 100).toFixed(1)}%</p>
         </div>
-
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
           <div className="flex items-center space-x-3 mb-2">
             <Shield className="w-6 h-6 text-blue-600" />
@@ -285,7 +250,6 @@ export function ModelOverviewPage() {
           </div>
           <p className="text-3xl font-bold text-blue-700">{(metrics.performance_metrics.f1_score * 100).toFixed(1)}%</p>
         </div>
-
         <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-6 border border-amber-200">
           <div className="flex items-center space-x-3 mb-2">
             <TrendingUp className="w-6 h-6 text-amber-600" />
@@ -293,131 +257,131 @@ export function ModelOverviewPage() {
           </div>
           <p className="text-3xl font-bold text-amber-700">{(metrics.performance_metrics.roc_auc * 100).toFixed(1)}%</p>
         </div>
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid lg:grid-cols-2 gap-8 mb-8">
-        {/* Performance Metrics Chart */}
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Performance Metrics</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={performanceData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip formatter={(value) => [`${value}%`, 'Value']} />
-              <Bar dataKey="value" fill="#3B82F6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Confusion Matrix Chart */}
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Confusion Matrix</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={confusionMatrixData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="value">
-                {confusionMatrixData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Confusion Matrix Visual */}
-      <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm mb-8">
-        <h3 className="text-xl font-bold text-gray-900 mb-4">Confusion Matrix Visualization</h3>
-        <div className="flex justify-center">
-          <div className="grid grid-cols-2 gap-2">
-            {confusionMatrixVisual.map((row, rowIndex) => (
-              <div key={rowIndex} className="grid grid-cols-2 gap-2">
-                {row.map((cell, cellIndex) => (
-                  <div
-                    key={cellIndex}
-                    className="w-32 h-32 flex flex-col items-center justify-center text-white font-bold text-lg rounded-lg"
-                    style={{ backgroundColor: cell.color }}
-                  >
-                    <div className="text-2xl font-bold">{cell.value}</div>
-                    <div className="text-sm opacity-90">{cell.label}</div>
-                  </div>
-                ))}
-              </div>
-            ))}
+        {/* Puedes agregar más métricas aquí si lo deseas */}
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+          <div className="flex items-center space-x-3 mb-2">
+            <Layers className="w-6 h-6 text-blue-600" />
+            <h3 className="font-semibold text-blue-900">Features</h3>
           </div>
+          <p className="text-3xl font-bold text-blue-700">{apiMetrics?.model_info?.n_features || 5}</p>
         </div>
-        <div className="mt-4 text-center text-sm text-gray-600">
-          <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-            <div>TN: True Negative (No Fraude, Predicho No Fraude)</div>
-            <div>FP: False Positive (No Fraude, Predicho Fraude)</div>
-            <div>FN: False Negative (Fraude, Predicho No Fraude)</div>
-            <div>TP: True Positive (Fraude, Predicho Fraude)</div>
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+          <div className="flex items-center space-x-3 mb-2">
+            <Database className="w-6 h-6 text-green-600" />
+            <h3 className="font-semibold text-green-900">Samples</h3>
           </div>
+          <p className="text-3xl font-bold text-green-700">{metrics.model_info.samples_trained}</p>
+        </div>
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
+          <div className="flex items-center space-x-3 mb-2">
+            <Calendar className="w-6 h-6 text-purple-600" />
+            <h3 className="font-semibold text-purple-900">Training Date</h3>
+          </div>
+          <p className="text-3xl font-bold text-purple-700">{metrics.model_info.training_date.split('T')[0]}</p>
+        </div>
+        <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-6 border border-amber-200">
+          <div className="flex items-center space-x-3 mb-2">
+            <Settings className="w-6 h-6 text-amber-600" />
+            <h3 className="font-semibold text-amber-900">Model Type</h3>
+          </div>
+          <p className="text-3xl font-bold text-amber-700">{metrics.model_info.type}</p>
         </div>
       </div>
 
-      {/* Feature Importance and Best Parameters */}
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Feature Importance */}
+      {/* SHAP y Model Feature Importance lado a lado */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        {/* SHAP Feature Importance */}
         <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Feature Importance</h3>
+          <h3 className="text-xl font-bold text-blue-900 mb-4">SHAP Feature Importance</h3>
           <div className="space-y-4">
-            {metrics.feature_importance.map((feature, index) => (
-              <div key={index} className="bg-gray-50 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium text-gray-900">{feature.feature}</span>
-                  <span className="text-sm text-gray-600">{(feature.importance * 100).toFixed(1)}%</span>
+            {shapFeatureImportance.length > 0 ? (
+              shapFeatureImportance.map((feature: any, idx: number) => (
+                <div key={feature.feature} className="flex items-center">
+                  <span className="w-40 text-gray-700 font-medium">{feature.feature}</span>
+                  <div className="flex-1 mx-4 h-4 bg-blue-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-500"
+                      style={{ width: `${(feature.importance * 100).toFixed(1)}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm text-blue-600 font-semibold" style={{ minWidth: 48, textAlign: 'right' }}>
+                    {(feature.importance * 100).toFixed(1)}%
+                  </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full" 
-                    style={{ width: `${feature.importance * 100}%` }}
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <p className="text-gray-500">Loading SHAP feature importance...</p>
+              </div>
+            )}
+          </div>
+        </div>
+        {/* Model Feature Importance */}
+        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
+          <h3 className="text-xl font-bold text-green-900 mb-4">Model Feature Importance</h3>
+          <div className="space-y-4">
+            {modelFeatureImportance.map((feature: any, idx: number) => (
+              <div key={feature.feature} className="flex items-center">
+                <span className="w-40 text-gray-700 font-medium">{feature.feature}</span>
+                <div className="flex-1 mx-4 h-4 bg-green-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-4 rounded-full bg-gradient-to-r from-green-400 to-yellow-400"
+                    style={{ width: `${(feature.importance * 100).toFixed(1)}%` }}
                   ></div>
                 </div>
+                <span className="text-sm text-green-700 font-semibold" style={{ minWidth: 48, textAlign: 'right' }}>
+                  {(feature.importance * 100).toFixed(1)}%
+                </span>
               </div>
             ))}
           </div>
         </div>
+      </div>
 
-        {/* Best Parameters */}
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-              <Settings className="w-5 h-5 text-indigo-600" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900">Best Hyperparameters</h3>
+      {/* Matriz de confusión y Best Hyperparameters lado a lado */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Matriz de confusión visual */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6 flex-1 shadow-sm flex flex-col items-center">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <Shield className="w-5 h-5 mr-2 text-green-600" />
+            Confusion Matrix
+          </h3>
+          <div className="grid grid-cols-2 grid-rows-2 gap-2 mb-4">
+            {confusionMatrixVisual.flat().map((cell, idx) => (
+              <div
+                key={cell.label}
+                className="w-24 h-24 flex flex-col items-center justify-center rounded-lg shadow text-lg font-bold"
+                style={{ 
+                  backgroundColor: cell.bgColor, 
+                  color: cell.textColor,
+                  border: cell.border ? `2px solid ${cell.color}` : 'none'
+                }}
+              >
+                {cell.value}
+                <span className="text-xs font-normal mt-1">{cell.label}</span>
+              </div>
+            ))}
           </div>
-          <div className="space-y-4">
-            <div className="bg-indigo-50 rounded-lg p-4">
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-indigo-900">Learning Rate</span>
-                <span className="text-indigo-700 font-semibold">{metrics.best_params.learning_rate}</span>
-              </div>
-            </div>
-            <div className="bg-indigo-50 rounded-lg p-4">
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-indigo-900">Max Depth</span>
-                <span className="text-indigo-700 font-semibold">{metrics.best_params.max_depth}</span>
-              </div>
-            </div>
-            <div className="bg-indigo-50 rounded-lg p-4">
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-indigo-900">N Estimators</span>
-                <span className="text-indigo-700 font-semibold">{metrics.best_params.n_estimators}</span>
-              </div>
-            </div>
-            <div className="bg-indigo-50 rounded-lg p-4">
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-indigo-900">Scale Pos Weight</span>
-                <span className="text-indigo-700 font-semibold">{metrics.best_params.scale_pos_weight}</span>
-              </div>
-            </div>
+          <div className="text-sm text-gray-600 mt-2">
+            <span className="font-semibold">TN</span>: True Negative, <span className="font-semibold">FP</span>: False Positive<br />
+            <span className="font-semibold">FN</span>: False Negative, <span className="font-semibold">TP</span>: True Positive
           </div>
+        </div>
+        {/* Best Hyperparameters */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6 flex-1 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <Settings className="w-5 h-5 mr-2 text-purple-600" />
+            Best Hyperparameters
+          </h3>
+          <ul className="text-sm text-gray-700 space-y-2">
+            {Object.entries(bestParams).map(([key, value]) => (
+              <li key={key} className="flex justify-between items-center bg-purple-50 rounded-md px-3 py-2 mb-1">
+                <span className="font-medium capitalize text-purple-900">{key.replace(/_/g, ' ')}</span>
+                <span className="font-mono text-base text-purple-700">{value}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
