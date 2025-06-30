@@ -18,7 +18,7 @@ class SHAPExplainer:
         self.explainer = None
         self.feature_names = [
             'Total_Reimbursed', 'Mean_Reimbursed', 'Claim_Count', 
-            'Unique_Beneficiaries', 'Pct_Male'
+            'Unique_Beneficiaries', 'Pct_Male', 'Avg_Beneficiary_Age'
         ]
         
         # Cargar modelo y crear explainer

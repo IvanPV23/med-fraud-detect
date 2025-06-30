@@ -38,6 +38,7 @@ class SinglePredictionRequest(BaseModel):
     Claim_Count: int
     Unique_Beneficiaries: int
     Pct_Male: float
+    Avg_Beneficiary_Age: float
 
 # Crear aplicación FastAPI
 app = FastAPI(
@@ -343,13 +344,10 @@ async def predict_single(request: SinglePredictionRequest):
         # Validar datos
         if request.Claim_Count <= 0:
             raise HTTPException(status_code=400, detail="Claim_Count debe ser mayor a 0")
-        
         if request.Pct_Male < 0 or request.Pct_Male > 1:
             raise HTTPException(status_code=400, detail="Pct_Male debe estar entre 0 y 1")
-        
         # Calcular Mean_Reimbursed automáticamente
         mean_reimbursed = request.Total_Reimbursed / request.Claim_Count
-        
         # Crear DataFrame con los datos
         data = {
             'Provider': [request.Provider],
@@ -357,23 +355,19 @@ async def predict_single(request: SinglePredictionRequest):
             'Mean_Reimbursed': [mean_reimbursed],
             'Claim_Count': [request.Claim_Count],
             'Unique_Beneficiaries': [request.Unique_Beneficiaries],
-            'Pct_Male': [request.Pct_Male]
+            'Pct_Male': [request.Pct_Male],
+            'Avg_Beneficiary_Age': [request.Avg_Beneficiary_Age]
         }
-        
         df = pd.DataFrame(data)
-        
         # Realizar predicción
         predictions = predictor.predict_from_dataframe(df)
-        
         if not predictions:
             raise HTTPException(status_code=500, detail="Error en la predicción")
-        
         return {
             "success": True,
             "prediction": predictions[0],
             "calculated_mean_reimbursed": mean_reimbursed
         }
-        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en predicción individual: {str(e)}")
 
@@ -389,12 +383,11 @@ async def explain_prediction_shap(request: SinglePredictionRequest):
             'Mean_Reimbursed': request.Total_Reimbursed / request.Claim_Count if request.Claim_Count > 0 else 0,
             'Claim_Count': request.Claim_Count,
             'Unique_Beneficiaries': request.Unique_Beneficiaries,
-            'Pct_Male': request.Pct_Male
+            'Pct_Male': request.Pct_Male,
+            'Avg_Beneficiary_Age': request.Avg_Beneficiary_Age
         }
-        
         # Generar explicación SHAP
         explanation = shap_explainer.explain_prediction(features)
-        
         return {
             "success": True,
             "explanation": explanation,
@@ -410,23 +403,20 @@ async def explain_prediction_lime(request: SinglePredictionRequest):
     """
     try:
         logger.info(f"LIME explanation request for provider: {request.Provider}")
-        
         # Preparar features
         features = {
             'Total_Reimbursed': request.Total_Reimbursed,
             'Mean_Reimbursed': request.Total_Reimbursed / request.Claim_Count if request.Claim_Count > 0 else 0,
             'Claim_Count': request.Claim_Count,
             'Unique_Beneficiaries': request.Unique_Beneficiaries,
-            'Pct_Male': request.Pct_Male
+            'Pct_Male': request.Pct_Male,
+            'Avg_Beneficiary_Age': request.Avg_Beneficiary_Age
         }
-        
         logger.info(f"Features prepared: {features}")
-        
         # Generar explicación LIME
         logger.info("Calling LIME explainer...")
         explanation = lime_explainer.explain_prediction(features)
         logger.info(f"LIME explanation generated successfully: {explanation.get('explanation_type', 'Unknown')}")
-        
         return {
             "success": True,
             "explanation": explanation,
@@ -488,7 +478,8 @@ async def compare_explanations(provider_name: str):
             'Mean_Reimbursed': float(row['Mean_Reimbursed']),
             'Claim_Count': int(row['Claim_Count']),
             'Unique_Beneficiaries': int(row['Unique_Beneficiaries']),
-            'Pct_Male': float(row['Pct_Male'])
+            'Pct_Male': float(row['Pct_Male']),
+            'Avg_Beneficiary_Age': float(row['Avg_Beneficiary_Age'])
         }
         
         # Generar explicaciones con manejo de errores individual
@@ -679,7 +670,8 @@ async def test_lime():
             'Mean_Reimbursed': 50,
             'Claim_Count': 1000,
             'Unique_Beneficiaries': 500,
-            'Pct_Male': 0.5
+            'Pct_Male': 0.5,
+            'Avg_Beneficiary_Age': 30.0
         }
         
         logger.info(f"Test features: {features}")

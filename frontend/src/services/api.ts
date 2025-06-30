@@ -78,6 +78,7 @@ export interface SinglePredictionRequest {
   Claim_Count: number;
   Unique_Beneficiaries: number;
   Pct_Male: number;
+  Avg_Beneficiary_Age: number;
 }
 
 export interface SinglePredictionResponse {

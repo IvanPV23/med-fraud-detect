@@ -28,10 +28,10 @@ export function HomePage() {
   ];
 
   const stats = [
-    { label: "Claims Analyzed", value: "2.4M+", icon: Activity },
-    { label: "Providers Monitored", value: "15,847", icon: Users },
+    { label: "Claims Analyzed", value: "5k+", icon: Activity },
+    { label: "Providers Monitored", value: "1353", icon: Users },
     { label: "Fraud Detected", value: "$12.8M", icon: DollarSign },
-    { label: "Accuracy Rate", value: "94.2%", icon: Shield }
+    { label: "Recall Rate", value: "75.6%", icon: Shield }
   ];
 
   return (

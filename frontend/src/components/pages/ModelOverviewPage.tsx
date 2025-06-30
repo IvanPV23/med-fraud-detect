@@ -65,7 +65,7 @@ export function ModelOverviewPage() {
         const convertedMetrics: ModelMetrics = {
           model_info: {
             name: "XGBoost Fraud Detection Model",
-            type: "XGBoost",
+            type: "XGBClassifier",
             version: "1.0.0",
             training_date: new Date().toISOString().split('T')[0],
             samples_trained: data.confusion_matrix[0][0] + data.confusion_matrix[0][1] + data.confusion_matrix[1][0] + data.confusion_matrix[1][1],
@@ -236,7 +236,7 @@ export function ModelOverviewPage() {
             <Layers className="w-6 h-6 text-blue-600" />
             <h3 className="font-semibold text-blue-900">Features</h3>
           </div>
-          <p className="text-3xl font-bold text-blue-700">{apiMetrics?.model_info?.n_features || 5}</p>
+          <p className="text-3xl font-bold text-blue-700">{apiMetrics?.model_info?.n_features || 6}</p>
         </div>
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
           <div className="flex items-center space-x-3 mb-2">

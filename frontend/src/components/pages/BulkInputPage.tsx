@@ -284,7 +284,7 @@ export function BulkInputPage() {
               <li>• Upload multiple CSV files simultaneously</li>
               <li>• System automatically detects file types</li>
               <li>• Data is processed and consolidated</li>
-              <li>• First 30 records are shown in preview</li>
+              <li>• First 10 records are shown in preview</li>
               <li>• Fraud detection runs on processed data</li>
             </ul>
           </div>

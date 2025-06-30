@@ -9,6 +9,7 @@ interface PredictionForm {
   Claim_Count: number;
   Unique_Beneficiaries: number;
   Pct_Male: number;
+  Avg_Beneficiary_Age: number;
 }
 
 export function SinglePredictionPage() {
@@ -17,7 +18,8 @@ export function SinglePredictionPage() {
     Total_Reimbursed: 0,
     Claim_Count: 0,
     Unique_Beneficiaries: 0,
-    Pct_Male: 0.5
+    Pct_Male: 0.5,
+    Avg_Beneficiary_Age: 70
   });
   
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
@@ -78,7 +80,8 @@ export function SinglePredictionPage() {
         Total_Reimbursed: formData.Total_Reimbursed,
         Claim_Count: formData.Claim_Count,
         Unique_Beneficiaries: formData.Unique_Beneficiaries,
-        Pct_Male: formData.Pct_Male
+        Pct_Male: formData.Pct_Male,
+        Avg_Beneficiary_Age: formData.Avg_Beneficiary_Age
       };
 
       // Llamar a la API de predicción individual
@@ -121,7 +124,8 @@ export function SinglePredictionPage() {
       Total_Reimbursed: 0,
       Claim_Count: 0,
       Unique_Beneficiaries: 0,
-      Pct_Male: 0.5
+      Pct_Male: 0.5,
+      Avg_Beneficiary_Age: 70
     });
     setPrediction(null);
     setCalculatedMeanReimbursed(null);
@@ -151,15 +155,17 @@ export function SinglePredictionPage() {
       {/* Feature Information */}
       <div className="bg-purple-50 border border-purple-200 rounded-xl p-6 mb-8">
         <h3 className="text-lg font-semibold text-purple-900 mb-4">Model Features</h3>
-        <div className="grid md:grid-cols-2 gap-4">
+        
+        <div className="grid md:grid-cols-2 gap-6">
           <div>
-            <h4 className="font-medium text-purple-800 mb-2">Required Features:</h4>
+            <h4 className="font-medium text-purple-800 mb-2">Required Features for Prediction:</h4>
             <ul className="text-sm text-purple-700 space-y-1">
               <li>• <strong>Provider:</strong> Provider name (identifier)</li>
               <li>• <strong>Total_Reimbursed:</strong> Total amount reimbursed</li>
               <li>• <strong>Claim_Count:</strong> Total number of claims</li>
               <li>• <strong>Unique_Beneficiaries:</strong> Number of unique patients</li>
               <li>• <strong>Pct_Male:</strong> Percentage of male patients (0-1)</li>
+              <li>• <strong>Avg_Beneficiary_Age:</strong> Average age of beneficiaries</li>
               <li>• <strong>Mean_Reimbursed:</strong> <em>Calculated automatically</em></li>
             </ul>
           </div>
@@ -167,9 +173,10 @@ export function SinglePredictionPage() {
             <h4 className="font-medium text-purple-800 mb-2">Model Info:</h4>
             <ul className="text-sm text-purple-700 space-y-1">
               <li>• <strong>Model Type:</strong> XGBoost Classifier</li>
-              <li>• <strong>Features:</strong> 5 numerical features</li>
+              <li>• <strong>Features:</strong> 6 numerical features</li>
               <li>• <strong>Output:</strong> Fraud probability (0-1)</li>
               <li>• <strong>Threshold:</strong> 0.5 for fraud detection</li>
+              <li>• <strong>Note:</strong> Avg_Beneficiary_Age is used in dashboard analysis but not in the prediction model</li>
             </ul>
           </div>
         </div>
@@ -325,6 +332,22 @@ export function SinglePredictionPage() {
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">Enter a value between 0 and 1 (e.g., 0.5 for 50%)</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Average Beneficiary Age *
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={formData.Avg_Beneficiary_Age}
+                  onChange={(e) => handleInputChange('Avg_Beneficiary_Age', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="70.0"
+                  required
+                />
               </div>
 
               <div className="flex space-x-3 pt-4">

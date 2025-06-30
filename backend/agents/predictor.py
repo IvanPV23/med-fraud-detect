@@ -24,12 +24,12 @@ class FraudPredictor:
     Agente para cargar el modelo XGBoost y realizar predicciones de fraude médico.
     """
     
-    def __init__(self, model_path: str = "models/xgb_fraud_model.pkl"):
+    def __init__(self, model_path: str = "models/lgb_fraud_model.pkl"):
         self.model_path = model_path
         self.model = None
         self.feature_names = [
             'Total_Reimbursed', 'Mean_Reimbursed', 'Claim_Count', 
-            'Unique_Beneficiaries', 'Pct_Male'
+            'Unique_Beneficiaries', 'Pct_Male', 'Avg_Beneficiary_Age'
         ]
         
         # Cargar modelo al inicializar

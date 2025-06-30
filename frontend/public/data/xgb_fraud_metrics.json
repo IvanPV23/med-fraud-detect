@@ -1,11 +1,11 @@
 {
-  "roc_auc": 0.9464,
-  "precision": 0.5486,
-  "recall": 0.7559,
-  "f1_score": 0.6358,
+  "roc_auc": 0.9441111867541843,
+  "precision": 0.520618556701031,
+  "recall": 0.7952755905511811,
+  "f1_score": 0.6292834890965732,
   "confusion_matrix": [
-    [1147, 79],
-    [31, 96]
+    [1133, 93],
+    [26, 101]
   ],
   "best_params": {
     "learning_rate": 0.01,
@@ -26,18 +26,23 @@
     },
     {
       "feature": "Claim_Count",
-      "importance": 0.226,
+      "importance": 0.100,
       "rank": 3
     },
     {
       "feature": "Pct_Male",
-      "importance": 0.222,
+      "importance": 0.050,
       "rank": 4
     },
     {
-      "feature": "Mean_Reimbursed",
-      "importance": 0.217,
+      "feature": "Avg_Beneficiary_Age",
+      "importance": 0.025,
       "rank": 5
+    },
+    {
+      "feature": "Mean_Reimbursed",
+      "importance": 0.024,
+      "rank": 6
     }
   ],
   "shap_feature_importance": [
@@ -57,14 +62,19 @@
       "rank": 3
     },
     {
-      "feature": "Pct_Male",
-      "importance": 0.098,
+      "feature": "Avg_Beneficiary_Age",
+      "importance": 0.080,
       "rank": 4
     },
     {
-      "feature": "Mean_Reimbursed",
-      "importance": 0.068,
+      "feature": "Pct_Male",
+      "importance": 0.050,
       "rank": 5
+    },
+    {
+      "feature": "Mean_Reimbursed",
+      "importance": 0.036,
+      "rank": 6
     }
   ]
 }

@@ -24,7 +24,7 @@ class LIMEExplainer:
         self.explainer = None
         self.feature_names = [
             'Total_Reimbursed', 'Mean_Reimbursed', 'Claim_Count', 
-            'Unique_Beneficiaries', 'Pct_Male'
+            'Unique_Beneficiaries', 'Pct_Male', 'Avg_Beneficiary_Age'
         ]
         self.training_data_path = "data/test_final/test_final.csv"
         

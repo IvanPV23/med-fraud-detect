@@ -1,0 +1,54 @@
+{
+  "roc_auc": 0.947894054026281,
+  "precision": 0.5405405405405406,
+  "recall": 0.7874015748031497,
+  "f1_score": 0.6410256410256411,
+  "confusion_matrix": [
+    [
+      1141,
+      85
+    ],
+    [
+      27,
+      100
+    ]
+  ],
+  "best_params": {
+    "learning_rate": 0.05,
+    "max_depth": 6,
+    "n_estimators": 250,
+    "scale_pos_weight": "n/a"
+  },
+  "feature_importance": [
+    {
+      "feature": "Total_Reimbursed",
+      "importance": 1303.0,
+      "rank": 1
+    },
+    {
+      "feature": "Avg_Beneficiary_Age",
+      "importance": 1086.0,
+      "rank": 2
+    },
+    {
+      "feature": "Pct_Male",
+      "importance": 948.0,
+      "rank": 3
+    },
+    {
+      "feature": "Unique_Beneficiaries",
+      "importance": 843.0,
+      "rank": 4
+    },
+    {
+      "feature": "Mean_Reimbursed",
+      "importance": 842.0,
+      "rank": 5
+    },
+    {
+      "feature": "Claim_Count",
+      "importance": 810.0,
+      "rank": 6
+    }
+  ]
+}
