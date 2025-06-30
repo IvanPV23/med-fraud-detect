@@ -22,10 +22,6 @@ class DataIngestor:
             'Total_Reimbursed', 'Mean_Reimbursed', 'Claim_Count', 
             'Unique_Beneficiaries', 'Pct_Male'
         ]
-        
-        # Crear directorios si no existen
-        os.makedirs(self.upload_dir, exist_ok=True)
-        os.makedirs(self.output_dir, exist_ok=True)
     
     def process_multiple_files(self) -> Dict[str, Any]:
         """
